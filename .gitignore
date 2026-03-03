@@ -1,0 +1,11 @@
+# Environment
+.env
+
+# Dependencies
+node_modules
+
+# Generated outputs
+output/
+
+# Runtime logs
+npm-debug.log*

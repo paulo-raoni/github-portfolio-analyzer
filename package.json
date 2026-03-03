@@ -1,0 +1,22 @@
+{
+  "name": "github-portfolio-analyzer",
+  "version": "0.1.0",
+  "description": "CLI tool to analyze GitHub repos and portfolio ideas",
+  "type": "module",
+  "bin": {
+    "github-portfolio-analyzer": "bin/github-portfolio-analyzer.js"
+  },
+  "scripts": {
+    "start": "node bin/github-portfolio-analyzer.js",
+    "analyze": "node bin/github-portfolio-analyzer.js analyze",
+    "ingest-ideas": "node bin/github-portfolio-analyzer.js ingest-ideas",
+    "build-portfolio": "node bin/github-portfolio-analyzer.js build-portfolio",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "dotenv": "^17.0.0"
+  }
+}
