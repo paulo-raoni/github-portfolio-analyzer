@@ -7,6 +7,8 @@ import { classifyActivity, classifyMaturity } from '../core/classification.js';
 import { scoreRepository } from '../core/scoring.js';
 import { buildRepoTaxonomy } from '../core/taxonomy.js';
 import { writeJsonFile } from '../io/files.js';
+import { writeInventoryCsv } from '../io/csv.js';
+import { mapWithConcurrency } from '../utils/concurrency.js';
 import { resolveAsOfDate, utcNowISOString } from '../utils/time.js';
 
 export async function runAnalyzeCommand(options = {}) {
@@ -17,9 +19,7 @@ export async function runAnalyzeCommand(options = {}) {
 
   const user = await github.getAuthenticatedUser();
   const repositories = await fetchAllRepositories(github);
-  const items = [];
-
-  for (const repo of repositories) {
+  const items = await mapWithConcurrency(repositories, 5, async (repo) => {
     const normalized = normalizeRepository(repo);
     try {
       const structuralHealth = await inspectRepositoryStructure(github, normalized);
@@ -37,7 +37,7 @@ export async function runAnalyzeCommand(options = {}) {
         score
       });
 
-      items.push({
+      return {
         ...normalized,
         structuralHealth,
         activity,
@@ -45,7 +45,7 @@ export async function runAnalyzeCommand(options = {}) {
         score,
         scoreBreakdown,
         ...taxonomy
-      });
+      };
     } catch (error) {
       const activity = classifyActivity(normalized.pushedAt, asOfDate);
       const maturity = classifyMaturity(normalized.sizeKb);
@@ -68,7 +68,7 @@ export async function runAnalyzeCommand(options = {}) {
         score
       });
 
-      items.push({
+      return {
         ...normalized,
         structuralHealth: fallbackStructuralHealth,
         activity,
@@ -77,9 +77,11 @@ export async function runAnalyzeCommand(options = {}) {
         scoreBreakdown,
         ...taxonomy,
         analysisErrors: [`Structural analysis failed: ${error.message}`]
-      });
+      };
     }
-  }
+  });
+
+  items.sort((left, right) => left.fullName.localeCompare(right.fullName));
 
   const outputDir = typeof options['output-dir'] === 'string' ? options['output-dir'] : 'output';
   const inventoryPath = path.join(outputDir, 'inventory.json');
@@ -93,7 +95,9 @@ export async function runAnalyzeCommand(options = {}) {
     },
     items
   });
+  const inventoryCsvPath = await writeInventoryCsv(outputDir, items);
 
   console.log(`Analyzed ${items.length} repositories for ${user.login}.`);
   console.log(`Wrote ${inventoryPath}.`);
+  console.log(`Wrote ${inventoryCsvPath}.`);
 }
