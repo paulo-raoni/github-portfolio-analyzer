@@ -1,3 +1,7 @@
-export async function runBuildPortfolioCommand() {
-  console.log('Build-portfolio skeleton ready. Portfolio merge will be implemented in the next milestones.');
+import { buildPortfolio } from '../core/portfolio.js';
+
+export async function runBuildPortfolioCommand(options = {}) {
+  const result = await buildPortfolio(options);
+  console.log(`Built portfolio with ${result.count} items.`);
+  console.log(`Wrote ${result.portfolioPath}.`);
 }
