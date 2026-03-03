@@ -1,5 +1,15 @@
 const GITHUB_API_BASE_URL = 'https://api.github.com';
 
+export class GithubApiError extends Error {
+  constructor(message, options) {
+    super(message);
+    this.name = 'GithubApiError';
+    this.status = options.status;
+    this.data = options.data;
+    this.headers = options.headers;
+  }
+}
+
 export class GithubClient {
   constructor(token) {
     this.token = token;
@@ -17,13 +27,18 @@ export class GithubClient {
       }
     });
 
+    const data = await safeJson(response);
+
     if (!response.ok) {
-      const body = await safeJson(response);
-      const details = body?.message ? ` (${body.message})` : '';
-      throw new Error(`GitHub API request failed: ${response.status}${details}`);
+      const details = data?.message ? ` (${data.message})` : '';
+      throw new GithubApiError(`GitHub API request failed: ${response.status}${details}`, {
+        status: response.status,
+        data,
+        headers: response.headers
+      });
     }
 
-    return safeJson(response);
+    return data;
   }
 
   async getAuthenticatedUser() {

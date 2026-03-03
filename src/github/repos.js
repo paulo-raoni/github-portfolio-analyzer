@@ -34,6 +34,7 @@ export function normalizeRepository(repo) {
     id: repo.id,
     nodeId: repo.node_id,
     name: repo.name,
+    ownerLogin: repo.owner?.login ?? '',
     fullName: repo.full_name,
     private: repo.private,
     archived: repo.archived,
