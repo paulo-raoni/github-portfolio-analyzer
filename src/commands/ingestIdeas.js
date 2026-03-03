@@ -1,3 +1,7 @@
-export async function runIngestIdeasCommand() {
-  console.log('Ingest-ideas skeleton ready. Idea ingestion will be implemented in the next milestones.');
+import { ingestIdeas } from '../core/ideas.js';
+
+export async function runIngestIdeasCommand(options = {}) {
+  const result = await ingestIdeas(options);
+  console.log(`Ingested ${result.count} ideas.`);
+  console.log(`Wrote ${result.outputPath}.`);
 }

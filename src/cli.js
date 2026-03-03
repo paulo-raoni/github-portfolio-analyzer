@@ -36,4 +36,9 @@ function printHelp() {
   console.log('Analyze options:');
   console.log('  --as-of YYYY-MM-DD     Snapshot date in UTC (defaults to today UTC)');
   console.log('  --output-dir PATH      Output directory (default: output)');
+  console.log('');
+  console.log('Ingest ideas options:');
+  console.log('  --input PATH           Input JSON file (default: ideas/input.json)');
+  console.log('  --prompt               Add ideas interactively');
+  console.log('  --output-dir PATH      Output directory (default: output)');
 }

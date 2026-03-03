@@ -1,0 +1,22 @@
+[
+  {
+    "title": "Developer Onboarding Checklist Generator",
+    "problem": "Small teams onboard inconsistently and lose time to repeated setup issues.",
+    "scope": "Generate project-specific onboarding checklists from repository metadata.",
+    "targetUser": "Engineering managers at startups",
+    "mvp": "CLI command that outputs a markdown checklist for one repository",
+    "nextAction": "Interview 3 engineering managers — Done when: interview notes include repeated onboarding blockers.",
+    "tags": ["developer-tools", "onboarding"],
+    "status": "draft",
+    "category": "tooling"
+  },
+  {
+    "title": "OSS Release Notes Assistant",
+    "problem": "Maintainers spend too much time writing release notes manually.",
+    "targetUser": "Open source maintainers",
+    "mvp": "Aggregate merged PR titles and labels into a release-notes draft",
+    "nextAction": "Define release notes sections - Done when: template covers features, fixes, and breaking changes.",
+    "tags": ["open-source", "automation"],
+    "status": "idea"
+  }
+]
