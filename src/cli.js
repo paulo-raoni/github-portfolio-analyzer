@@ -1,6 +1,7 @@
 import { runAnalyzeCommand } from './commands/analyze.js';
 import { runIngestIdeasCommand } from './commands/ingestIdeas.js';
 import { runBuildPortfolioCommand } from './commands/buildPortfolio.js';
+import { runReportCommand } from './commands/report.js';
 import { parseArgs } from './utils/args.js';
 
 export async function runCli(argv) {
@@ -17,6 +18,9 @@ export async function runCli(argv) {
     case 'build-portfolio':
       await runBuildPortfolioCommand(options);
       return;
+    case 'report':
+      await runReportCommand(options);
+      return;
     case '--help':
     case '-h':
     default:
@@ -32,6 +36,7 @@ function printHelp() {
   console.log('  analyze          Analyze GitHub repositories and build inventory outputs');
   console.log('  ingest-ideas     Add or update manual project ideas');
   console.log('  build-portfolio  Merge repos and ideas into the portfolio outputs');
+  console.log('  report           Generate decision-oriented portfolio reports');
   console.log('');
   console.log('Analyze options:');
   console.log('  --as-of YYYY-MM-DD     Snapshot date in UTC (defaults to today UTC)');
@@ -44,4 +49,8 @@ function printHelp() {
   console.log('');
   console.log('Build portfolio options:');
   console.log('  --output-dir PATH      Output directory (default: output)');
+  console.log('');
+  console.log('Report options:');
+  console.log('  --output-dir PATH      Output directory (default: output)');
+  console.log('  --format VALUE         ascii|md|json|all (default: all)');
 }

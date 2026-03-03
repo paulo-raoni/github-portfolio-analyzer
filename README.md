@@ -121,6 +121,27 @@ What it does:
   - `output/projects/*.md`
   - `output/portfolio-summary.md`
 
+### 4) Generate decision-oriented reports
+
+```bash
+github-portfolio-analyzer report --format all
+```
+
+Options:
+
+- `--output-dir PATH` optional output directory (default: `output`).
+- `--format VALUE` report format: `ascii | md | json | all` (default: `all`).
+
+What it does:
+
+- Reads `output/portfolio.json` (required)
+- Optionally reads `output/inventory.json` for repo-specific completion signals
+- Computes completion levels, effort estimates, and priority bands
+- Writes:
+  - `output/portfolio-report.json`
+  - `output/portfolio-report.md`
+  - `output/portfolio-report.txt`
+
 ## Input and Output Contracts
 
 ### Ideas input (`ideas/input.json`)
@@ -180,7 +201,7 @@ Main modules:
 - `src/config.js`: env loading and token validation
 - `src/github/*`: API client, pagination, structural inspection
 - `src/core/*`: scoring, taxonomy, ideas ingestion, portfolio merge
-- `src/io/*`: JSON/CSV/markdown writers
+- `src/io/*`: JSON/CSV/markdown/report writers
 - `src/utils/*`: time, slug, retry, concurrency, nextAction handling
 
 Design choices:
@@ -218,4 +239,7 @@ The test suite validates:
   portfolio.json
   inventory.csv
   portfolio-summary.md
+  portfolio-report.json
+  portfolio-report.md
+  portfolio-report.txt
 ```
