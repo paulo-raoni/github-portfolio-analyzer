@@ -23,10 +23,10 @@ export async function runAnalyzeCommand(options = {}) {
     const normalized = normalizeRepository(repo);
     try {
       const structuralHealth = await inspectRepositoryStructure(github, normalized);
-      const activity = classifyActivity(normalized.pushedAt, asOfDate);
+      const activity = classifyActivity(normalized._pushedAt, asOfDate);
       const maturity = classifyMaturity(normalized.sizeKb);
       const { score, scoreBreakdown } = scoreRepository(
-        { ...normalized, structuralHealth },
+        { ...normalized, structuralHealth, pushedAt: normalized._pushedAt, updatedAt: normalized._updatedAt },
         asOfDate
       );
       const taxonomy = buildRepoTaxonomy({
@@ -37,7 +37,7 @@ export async function runAnalyzeCommand(options = {}) {
         score
       });
 
-      return {
+      return stripInternalFields({
         ...normalized,
         structuralHealth,
         activity,
@@ -45,9 +45,9 @@ export async function runAnalyzeCommand(options = {}) {
         score,
         scoreBreakdown,
         ...taxonomy
-      };
+      });
     } catch (error) {
-      const activity = classifyActivity(normalized.pushedAt, asOfDate);
+      const activity = classifyActivity(normalized._pushedAt, asOfDate);
       const maturity = classifyMaturity(normalized.sizeKb);
       const fallbackStructuralHealth = {
         hasReadme: false,
@@ -57,7 +57,12 @@ export async function runAnalyzeCommand(options = {}) {
         hasCi: false
       };
       const { score, scoreBreakdown } = scoreRepository(
-        { ...normalized, structuralHealth: fallbackStructuralHealth },
+        {
+          ...normalized,
+          structuralHealth: fallbackStructuralHealth,
+          pushedAt: normalized._pushedAt,
+          updatedAt: normalized._updatedAt
+        },
         asOfDate
       );
       const taxonomy = buildRepoTaxonomy({
@@ -68,7 +73,7 @@ export async function runAnalyzeCommand(options = {}) {
         score
       });
 
-      return {
+      return stripInternalFields({
         ...normalized,
         structuralHealth: fallbackStructuralHealth,
         activity,
@@ -77,7 +82,7 @@ export async function runAnalyzeCommand(options = {}) {
         scoreBreakdown,
         ...taxonomy,
         analysisErrors: [`Structural analysis failed: ${error.message}`]
-      };
+      });
     }
   });
 
@@ -100,4 +105,14 @@ export async function runAnalyzeCommand(options = {}) {
   console.log(`Analyzed ${items.length} repositories for ${user.login}.`);
   console.log(`Wrote ${inventoryPath}.`);
   console.log(`Wrote ${inventoryCsvPath}.`);
+}
+
+function stripInternalFields(item) {
+  const output = {};
+  for (const [key, value] of Object.entries(item)) {
+    if (!key.startsWith('_')) {
+      output[key] = value;
+    }
+  }
+  return output;
 }

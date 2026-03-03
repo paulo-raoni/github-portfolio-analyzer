@@ -49,8 +49,7 @@ export function normalizeRepository(repo) {
     defaultBranch: repo.default_branch,
     topics: Array.isArray(repo.topics) ? repo.topics : [],
     hasLicense: Boolean(repo.license),
-    createdAt: repo.created_at,
-    updatedAt: repo.updated_at,
-    pushedAt: repo.pushed_at
+    _updatedAt: repo.updated_at,
+    _pushedAt: repo.pushed_at
   };
 }
