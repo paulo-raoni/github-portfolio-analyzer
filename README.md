@@ -1,162 +1,164 @@
 # github-portfolio-analyzer
 
-`github-portfolio-analyzer` is a production-oriented Node.js CLI that builds portfolio intelligence from two streams:
+Build a decision-ready developer portfolio from real GitHub repositories and planned ideas in one deterministic CLI workflow.
+This project turns raw repository metadata into actionable prioritization outputs for execution planning.
 
-1. Existing GitHub repositories (via GitHub API)
-2. Manual project ideas that are not repositories yet
+---
+**Tagline:** From repository inventory to execution decisions in minutes.
 
-It produces deterministic portfolio artifacts for planning, prioritization, and reporting.
+## Why This Tool Exists
 
-## Requirements
+Most portfolios are incomplete: repositories are analyzed, but pending ideas live in notes and never enter prioritization.
+`github-portfolio-analyzer` unifies both streams and emits stable artifacts for reporting, planning, and backlog strategy.
 
-- Node.js 22+ (latest LTS in this dev container)
-- A GitHub Personal Access Token for `analyze`
+## 3-Minute Quickstart
 
-## Installation
+### 1) Requirements
+
+- Node.js `22+`
+- GitHub Personal Access Token (PAT) for `analyze`
+
+### 2) Create a GitHub PAT (short version)
+
+Create a token in GitHub settings and store it in `.env`.
+Use the minimum read permissions needed to list repos and inspect repository files/workflows:
+
+- **Fine-grained token:** repository `Metadata: Read`, `Contents: Read`, `Actions: Read`
+- **Classic token (fallback):** `repo` scope (read usage by this CLI)
+
+### 3) Install and configure
 
 ```bash
 npm install
-```
-
-Run directly:
-
-```bash
-node bin/github-portfolio-analyzer.js --help
-```
-
-Or link globally in your environment:
-
-```bash
-npm link
-github-portfolio-analyzer --help
-```
-
-## Environment
-
-Create `.env` based on `.env.example`:
-
-```bash
 cp .env.example .env
 ```
 
-Variables:
+Set values in `.env`:
 
-- `GITHUB_TOKEN` (required for `analyze`)
-- `GITHUB_USERNAME` (optional)
+```dotenv
+GITHUB_TOKEN=your_github_token_here
+GITHUB_USERNAME=your_github_username_here
+```
 
-If `GITHUB_TOKEN` is missing, `analyze` exits with a clear error. `ingest-ideas` and `build-portfolio` still work.
+### 4) Run the core pipeline
 
-## Commands
+```bash
+github-portfolio-analyzer analyze --as-of 2026-03-03
+github-portfolio-analyzer ingest-ideas
+github-portfolio-analyzer build-portfolio
+github-portfolio-analyzer report --format all
+```
 
-### 1) Analyze GitHub repositories
+Example console snippet:
+
+```bash
+$ github-portfolio-analyzer analyze --as-of 2026-03-03
+Analyzed 51 repositories for octocat.
+Wrote output/inventory.json.
+Wrote output/inventory.csv.
+```
+
+## End-to-End Tutorial
+
+### Step 1: Analyze repositories
 
 ```bash
 github-portfolio-analyzer analyze --as-of 2026-03-03
 ```
 
-Options:
-
-- `--as-of YYYY-MM-DD` optional snapshot date (UTC). If omitted, UTC today is computed once at runtime.
-- `--output-dir PATH` optional output directory (default: `output`).
-
-What it does:
+What happens:
 
 - Authenticates with GitHub API
-- Fetches all repositories with pagination
-- Performs structural checks (README, LICENSE, package.json, tests, CI)
-- Classifies activity and maturity
-- Scores repositories (0..100)
-- Applies taxonomy defaults/inference and provenance metadata
-- Writes:
-  - `output/inventory.json`
-  - `output/inventory.csv`
+- Fetches all repos with pagination
+- Computes structural health, activity, maturity, score, taxonomy
+- Writes `inventory.json` and `inventory.csv`
 
-### 2) Ingest project ideas
+### Step 2: Ingest ideas
 
-From JSON file (default `ideas/input.json`):
+Default file mode:
 
 ```bash
 github-portfolio-analyzer ingest-ideas
 ```
 
-With explicit file:
-
-```bash
-github-portfolio-analyzer ingest-ideas --input ./ideas/input.json
-```
-
-Interactive prompt:
+Interactive mode:
 
 ```bash
 github-portfolio-analyzer ingest-ideas --prompt
 ```
 
-What it does:
+What happens:
 
 - Normalizes idea records
-- Upserts ideas by slug
-- Scores ideas (0..100)
-- Maps `status` to taxonomy `state`
-- Validates/normalizes `nextAction`
-- Writes `output/ideas.json`
+- Scores ideas
+- Applies taxonomy defaults/inference with provenance metadata
+- Normalizes `nextAction` to canonical format
 
-### 3) Build merged portfolio
+### Step 3: Build merged portfolio
 
 ```bash
 github-portfolio-analyzer build-portfolio
 ```
 
-Options:
+What happens:
 
-- `--output-dir PATH` optional output directory (default: `output`).
+- Merges repos + ideas
+- Preserves deterministic ordering
+- Writes `portfolio.json`, per-project markdown pages, and `portfolio-summary.md`
 
-What it does:
-
-- Merges repos + ideas into one source of truth
-- Preserves deterministic sorting
-- Generates per-project markdown pages
-- Generates summary report with state sections and top scores
-- Writes:
-  - `output/portfolio.json`
-  - `output/projects/*.md`
-  - `output/portfolio-summary.md`
-
-### 4) Generate decision-oriented reports
+### Step 4: Generate decision report
 
 ```bash
 github-portfolio-analyzer report --format all
 ```
 
-Options:
+What happens:
 
-- `--output-dir PATH` optional output directory (default: `output`).
-- `--format VALUE` report format: `ascii | md | json | all` (default: `all`).
+- Reads `portfolio.json` (required)
+- Optionally reads `inventory.json` for richer repo completion signals
+- Computes completion level, effort estimate, and priority band
+- Writes ASCII + Markdown + JSON report artifacts
 
-What it does:
+## Command Reference
 
-- Reads `output/portfolio.json` (required)
-- Optionally reads `output/inventory.json` for repo-specific completion signals
-- Computes completion levels, effort estimates, and priority bands
-- Writes:
-  - `output/portfolio-report.json`
-  - `output/portfolio-report.md`
-  - `output/portfolio-report.txt`
+| Command | Purpose | Key Options |
+|---|---|---|
+| `analyze` | Build repository inventory from GitHub API | `--as-of YYYY-MM-DD`, `--output-dir PATH` |
+| `ingest-ideas` | Add/update idea records | `--input PATH`, `--prompt`, `--output-dir PATH` |
+| `build-portfolio` | Merge repos + ideas into portfolio outputs | `--output-dir PATH` |
+| `report` | Produce decision-oriented report artifacts | `--output-dir PATH`, `--format ascii\|md\|json\|all` |
 
-## Input and Output Contracts
+Default for `report --format` is `all`.
 
-### Ideas input (`ideas/input.json`)
+## Output Directory Map
 
-`ideas/input.json` must be a JSON array. Example fields:
+```text
+/output
+  /projects
+    {project-slug}.md
+  inventory.json
+  inventory.csv
+  ideas.json
+  portfolio.json
+  portfolio-summary.md
+  portfolio-report.json
+  portfolio-report.md
+  portfolio-report.txt
+```
 
-- `title` (required)
-- `problem`, `scope`, `targetUser`, `mvp` (optional)
-- `nextAction` (optional)
-- `status`, `tags` (optional)
-- optional taxonomy overrides: `category`, `state`, `strategy`, `effort`, `value`
+Artifact roles:
+
+- `inventory.json`: repository-only enriched source (includes taxonomy + taxonomyMeta)
+- `ideas.json`: ideas-only normalized source
+- `portfolio.json`: merged source of truth
+- `portfolio-summary.md`: high-level portfolio summary (state sections + top 10)
+- `portfolio-report.*`: decision-oriented planning report in machine and human formats
+
+## Data Contracts
 
 ### Taxonomy contract (all portfolio items)
 
-Each item in `output/portfolio.json.items[]` includes:
+Each `portfolio.json.items[]` entry includes:
 
 - `type`: `repo | idea`
 - `category`: `product | tooling | library | learning | content | infra | experiment | template`
@@ -165,20 +167,72 @@ Each item in `output/portfolio.json.items[]` includes:
 - `effort`: `xs | s | m | l | xl`
 - `value`: `low | medium | high | very-high`
 - `nextAction`: `"<Verb> <target> — Done when: <measurable condition>"`
-- `taxonomyMeta` with per-field source provenance (`default | user | inferred`)
+- `taxonomyMeta`: per-field provenance (`default | user | inferred`)
 
-`output/inventory.json.items[]` also includes taxonomy fields and `taxonomyMeta` for repos.
+`inventory.json.items[]` includes the same taxonomy fields and `taxonomyMeta` for repositories.
 
-## Determinism Rules
+### Report contract
 
-- Snapshot date uses `--as-of` or UTC today (calculated once per run).
-- `inventory.json.meta.asOfDate` persists snapshot date.
-- `portfolio.json.meta.asOfDate` copies inventory `asOfDate` or `null` when inventory is missing.
-- Item sorting is deterministic:
-  - repos by `fullName` asc in inventory
-  - ideas by `slug` asc in ideas output
-  - portfolio by `score` desc, then `slug` asc
-- Item-level generated timestamps are not stored.
+`portfolio-report.json` includes:
+
+- `meta` (generatedAt, asOfDate, owner, counts)
+- `summary` (state counts, top10 by score, now/next/later/park)
+- `matrix.completionByEffort` (`CL0..CL5` by `xs..xl`)
+- `items[]` with decision fields (`completionLevel`, `effortEstimate`, `priorityBand`, `priorityWhy`)
+
+## Decision Model (Report)
+
+### Completion Level
+
+- `CL0`: no README
+- `CL1`: has README
+- `CL2`: has package.json, or non-JS repo with size >= 500 KB
+- `CL3`: CL2 + CI
+- `CL4`: CL3 + tests
+- `CL5`: CL4 + score >= 70
+- Ideas default to `CL0`
+
+### Effort Estimate
+
+Uses taxonomy `effort` unless `effort` source is `default`.
+If defaulted, infer by size and completion:
+
+- `xs`: size < 100 KB and CL <= 2
+- `s`: size < 500 KB and CL <= 3
+- `m`: size < 5000 KB
+- `l`: size < 20000 KB
+- `xl`: size >= 20000 KB
+
+`effortEstimate` is a report field only; it does not overwrite taxonomy `effort`.
+
+### Priority Band
+
+Internal score calculation:
+
+- base: `score`
+- `+10` if state `active`
+- `+5` if state `stale`
+- `-20` if state `abandoned` or `archived`
+- `+10` if completion is CL1..CL3
+- `-10` if effortEstimate is `l` or `xl`
+
+Band mapping:
+
+- `now`: >= 80
+- `next`: 65..79
+- `later`: 45..64
+- `park`: < 45
+
+## Determinism and Time Rules
+
+- `asOfDate` is UTC-based (`--as-of` or UTC today once per `analyze` run)
+- `inventory.json.meta.asOfDate` persists snapshot date
+- `portfolio.json.meta.asOfDate` copies inventory asOfDate, or `null` when inventory is missing
+- Item-level timestamps are not persisted
+- Deterministic ordering:
+  - inventory repos by `fullName` ascending
+  - ideas by `slug` ascending
+  - portfolio by `score` descending then `slug` ascending
 
 ## nextAction Validation
 
@@ -186,60 +240,71 @@ Required canonical format:
 
 `"<Verb> <target> — Done when: <measurable condition>"`
 
-Robust input acceptance:
+Robust input support:
 
-- Accepts `" - Done when:"` from user input
-- Normalizes output to em dash `"— Done when:"`
-- Rejects invalid values with a clear error message
+- Accepts fallback marker `" - Done when:"`
+- Normalizes to em dash marker `"— Done when:"`
+- Throws clear error for invalid format
 
-## Architecture Overview
+## Architecture
 
-Main modules:
+```text
+bin/
+  github-portfolio-analyzer.js
+src/
+  commands/ (analyze, ingest-ideas, build-portfolio, report)
+  core/     (classification, scoring, taxonomy, ideas, portfolio, report)
+  github/   (api client, pagination, structural inspection)
+  io/       (json/csv/markdown/report writers)
+  utils/    (args, time, slug, retry, concurrency, nextAction)
+```
 
-- `bin/github-portfolio-analyzer.js`: executable entrypoint
-- `src/cli.js`: command routing + option parsing
-- `src/config.js`: env loading and token validation
-- `src/github/*`: API client, pagination, structural inspection
-- `src/core/*`: scoring, taxonomy, ideas ingestion, portfolio merge
-- `src/io/*`: JSON/CSV/markdown/report writers
-- `src/utils/*`: time, slug, retry, concurrency, nextAction handling
-
-Design choices:
+Implementation characteristics:
 
 - Minimal dependencies (`dotenv` only)
+- Built-in `fetch`
 - GitHub API only (no repository cloning)
-- Retry/backoff for rate limits (403/429)
-- Per-repo fault isolation during analysis
-- Deterministic output ordering
+- Retry/backoff on 403/429 and transient failures
+- Per-repo error isolation during analysis
 
-## Testing
+## Testing and Quality
 
-Run all tests:
+Run the full suite:
 
 ```bash
 npm test
 ```
 
-The test suite validates:
+Coverage includes:
 
-- taxonomy presence and shape
-- `nextAction` marker behavior (`— Done when:`)
-- score/activity/maturity boundaries
-- portfolio `asOfDate` null behavior when inventory is missing
-- deterministic merge ordering
+- activity/maturity/scoring boundaries
+- taxonomy presence and provenance behavior
+- `nextAction` validation and normalization
+- portfolio merge determinism
+- report completion logic, priority mapping, and deterministic model generation
 
-## Output Layout
+## Troubleshooting
 
-```text
-/output
-  /projects
-    {project-slug}.md
-  inventory.json
-  ideas.json
-  portfolio.json
-  inventory.csv
-  portfolio-summary.md
-  portfolio-report.json
-  portfolio-report.md
-  portfolio-report.txt
-```
+### Missing `GITHUB_TOKEN`
+
+`analyze` fails fast with a clear error when token is missing.
+`ingest-ideas`, `build-portfolio`, and `report` still run without GitHub authentication.
+
+### Missing `portfolio.json` for report
+
+`report` requires `output/portfolio.json` and will fail with:
+
+- `Missing required input: output/portfolio.json. Run build-portfolio before report.`
+
+### Report with no inventory
+
+If `inventory.json` is absent:
+
+- report still runs from `portfolio.json`
+- owner is `null`
+- completion signals are best-effort from portfolio fields
+
+## License and Contribution
+
+Use this repository as a base for portfolio automation workflows and adapt heuristics for your organization.
+Contributions should preserve deterministic contracts and avoid adding non-essential dependencies.
