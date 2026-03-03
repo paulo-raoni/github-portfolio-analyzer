@@ -53,4 +53,7 @@ function printHelp() {
   console.log('Report options:');
   console.log('  --output-dir PATH      Output directory (default: output)');
   console.log('  --format VALUE         ascii|md|json|all (default: all)');
+  console.log('  --policy PATH          Optional policy overlay JSON file');
+  console.log('  --priorities PATH      Alias for --policy');
+  console.log('  --explain              Print NOW ranking explainability to console');
 }

@@ -159,6 +159,18 @@ test('buildReportModel is deterministic when ignoring generatedAt', () => {
 
   assert.deepEqual(first, second);
   assert.equal(first.summary.top10ByScore[0].slug, 'alpha');
+
+  const allowedEffortValues = new Set(['xs', 's', 'm', 'l', 'xl']);
+
+  for (const item of first.items) {
+    assert.equal(allowedEffortValues.has(item.effortEstimate), true);
+  }
+
+  for (const sectionName of ['top10ByScore', 'now', 'next', 'later', 'park']) {
+    for (const item of first.summary[sectionName]) {
+      assert.equal(allowedEffortValues.has(item.effortEstimate), true);
+    }
+  }
 });
 
 test('report command generates all outputs from portfolio-only input', async () => {
@@ -201,4 +213,332 @@ test('report command generates all outputs from portfolio-only input', async () 
   assert.equal(model.meta.asOfDate, null);
   assert.equal(model.meta.owner, null);
   assert.equal(model.meta.counts.ideas, 1);
+});
+
+test('no-policy report output is identical to empty policy overlay', () => {
+  const portfolio = {
+    meta: { asOfDate: '2026-03-03' },
+    items: [
+      {
+        slug: 'alpha',
+        type: 'repo',
+        fullName: 'owner/alpha',
+        score: 70,
+        state: 'active',
+        effort: 'm',
+        value: 'high',
+        category: 'tooling',
+        strategy: 'maintenance',
+        taxonomyMeta: { sources: { effort: 'default' } },
+        structuralHealth: {
+          hasReadme: true,
+          hasPackageJson: true,
+          hasCi: true,
+          hasTests: true
+        },
+        sizeKb: 250,
+        language: 'TypeScript',
+        nextAction: 'Ship patch release — Done when: release notes are published.'
+      }
+    ]
+  };
+
+  const base = buildReportModel(portfolio, null, { generatedAt: '2026-03-03T00:00:00.000Z' });
+  const withEmptyPolicy = buildReportModel(portfolio, null, {
+    generatedAt: '2026-03-03T00:00:00.000Z',
+    policyOverlay: { version: 1 }
+  });
+
+  assert.deepEqual(base, withEmptyPolicy);
+});
+
+test('policy rules are applied in deterministic id order with cumulative boosts', () => {
+  const portfolio = {
+    meta: { asOfDate: '2026-03-03' },
+    items: [
+      {
+        slug: 'alpha-repo',
+        type: 'repo',
+        fullName: 'owner/alpha-repo',
+        title: 'Alpha Repo',
+        score: 60,
+        state: 'active',
+        effort: 'm',
+        value: 'high',
+        category: 'tooling',
+        strategy: 'maintenance',
+        taxonomyMeta: { sources: { effort: 'user' } },
+        structuralHealth: {
+          hasReadme: true,
+          hasPackageJson: true,
+          hasCi: false,
+          hasTests: false
+        },
+        sizeKb: 1000,
+        language: 'TypeScript',
+        nextAction: 'Ship patch release — Done when: release notes are published.'
+      }
+    ]
+  };
+
+  const report = buildReportModel(portfolio, null, {
+    generatedAt: '2026-03-03T00:00:00.000Z',
+    policyOverlay: {
+      version: 1,
+      rules: [
+        {
+          id: 'z-rule',
+          match: { slugContains: ['alpha-repo'] },
+          effects: { boost: 5 },
+          reason: 'later id'
+        },
+        {
+          id: 'a-rule',
+          match: { slugContains: ['alpha-repo'] },
+          effects: { boost: 8 },
+          reason: 'earlier id'
+        }
+      ]
+    }
+  });
+
+  const item = report.items[0];
+  assert.equal(item.basePriorityScore, 80);
+  assert.equal(item.finalPriorityScore, 93);
+  assert.deepEqual(
+    item.priorityOverrides.map((entry) => entry.ruleId),
+    ['a-rule', 'z-rule']
+  );
+});
+
+test('pin band overrides forceBand and regular boosts', () => {
+  const portfolio = {
+    meta: { asOfDate: '2026-03-03' },
+    items: [
+      {
+        slug: 'alpha-repo',
+        type: 'repo',
+        fullName: 'owner/alpha-repo',
+        score: 95,
+        state: 'active',
+        effort: 's',
+        value: 'high',
+        category: 'tooling',
+        strategy: 'maintenance',
+        taxonomyMeta: { sources: { effort: 'user' } },
+        structuralHealth: {
+          hasReadme: true,
+          hasPackageJson: true,
+          hasCi: true,
+          hasTests: true
+        },
+        sizeKb: 300,
+        language: 'TypeScript',
+        nextAction: 'Ship patch release — Done when: release notes are published.'
+      }
+    ]
+  };
+
+  const report = buildReportModel(portfolio, null, {
+    generatedAt: '2026-03-03T00:00:00.000Z',
+    policyOverlay: {
+      version: 1,
+      rules: [
+        {
+          id: 'force-now',
+          match: { slugContains: ['alpha-repo'] },
+          effects: { forceBand: 'now', boost: 20 }
+        }
+      ],
+      pin: [
+        {
+          slug: 'alpha-repo',
+          band: 'park',
+          tag: 'manual-park'
+        }
+      ]
+    }
+  });
+
+  const item = report.items[0];
+  assert.equal(item.priorityBand, 'park');
+  assert.equal(item.priorityTag, 'manual-park');
+});
+
+test('forceBand precedence chooses strongest forced band', () => {
+  const portfolio = {
+    meta: { asOfDate: '2026-03-03' },
+    items: [
+      {
+        slug: 'alpha-repo',
+        type: 'repo',
+        fullName: 'owner/alpha-repo',
+        score: 20,
+        state: 'abandoned',
+        effort: 'm',
+        value: 'medium',
+        category: 'tooling',
+        strategy: 'maintenance',
+        taxonomyMeta: { sources: { effort: 'user' } },
+        structuralHealth: {
+          hasReadme: true,
+          hasPackageJson: true,
+          hasCi: false,
+          hasTests: false
+        },
+        sizeKb: 200,
+        language: 'TypeScript',
+        nextAction: 'Decide archive plan — Done when: ownership is documented.'
+      }
+    ]
+  };
+
+  const report = buildReportModel(portfolio, null, {
+    generatedAt: '2026-03-03T00:00:00.000Z',
+    policyOverlay: {
+      version: 1,
+      rules: [
+        {
+          id: 'force-later',
+          match: { slugContains: ['alpha-repo'] },
+          effects: { forceBand: 'later' }
+        },
+        {
+          id: 'force-now',
+          match: { slugContains: ['alpha-repo'] },
+          effects: { forceBand: 'now' }
+        }
+      ]
+    }
+  });
+
+  assert.equal(report.items[0].priorityBand, 'now');
+});
+
+test('pinned without band applies deterministic boost', () => {
+  const portfolio = {
+    meta: { asOfDate: '2026-03-03' },
+    items: [
+      {
+        slug: 'alpha-repo',
+        type: 'repo',
+        fullName: 'owner/alpha-repo',
+        score: 30,
+        state: 'stale',
+        effort: 'm',
+        value: 'medium',
+        category: 'tooling',
+        strategy: 'maintenance',
+        taxonomyMeta: { sources: { effort: 'user' } },
+        structuralHealth: {
+          hasReadme: true,
+          hasPackageJson: true,
+          hasCi: false,
+          hasTests: false
+        },
+        sizeKb: 200,
+        language: 'TypeScript',
+        nextAction: 'Refresh docs — Done when: setup steps are validated.'
+      }
+    ]
+  };
+
+  const report = buildReportModel(portfolio, null, {
+    generatedAt: '2026-03-03T00:00:00.000Z',
+    policyOverlay: {
+      version: 1,
+      pin: [
+        {
+          slug: 'alpha-repo'
+        }
+      ]
+    }
+  });
+
+  const item = report.items[0];
+  assert.equal(item.basePriorityScore, 45);
+  assert.equal(item.finalPriorityScore, 145);
+});
+
+test('report command explain mode does not change report json', { concurrency: false }, async () => {
+  const workspace = await mkdtemp(path.join(os.tmpdir(), 'gpa-report-explain-'));
+  const outputDir = path.join(workspace, 'output');
+  await mkdir(outputDir, { recursive: true });
+
+  await writeFile(
+    path.join(outputDir, 'portfolio.json'),
+    JSON.stringify({
+      meta: {
+        generatedAt: '2026-03-03T00:00:00.000Z',
+        asOfDate: '2026-03-03',
+        count: 1
+      },
+      items: [
+        {
+          slug: 'single-idea',
+          type: 'idea',
+          title: 'Single Idea',
+          score: 81,
+          state: 'idea',
+          effort: 'm',
+          value: 'medium',
+          category: 'experiment',
+          strategy: 'parked',
+          taxonomyMeta: { sources: { effort: 'default' } },
+          nextAction: 'Define MVP — Done when: acceptance checks are documented.'
+        }
+      ]
+    }, null, 2),
+    'utf8'
+  );
+
+  await runReportCommand({ 'output-dir': outputDir, format: 'json' });
+  const first = await readJsonFile(path.join(outputDir, 'portfolio-report.json'));
+
+  const capturedLogs = [];
+  const originalLog = console.log;
+  console.log = (...args) => {
+    capturedLogs.push(args.join(' '));
+  };
+
+  try {
+    await runReportCommand({ 'output-dir': outputDir, format: 'json', explain: true });
+  } finally {
+    console.log = originalLog;
+  }
+
+  const second = await readJsonFile(path.join(outputDir, 'portfolio-report.json'));
+
+  delete first.meta.generatedAt;
+  delete second.meta.generatedAt;
+  assert.deepEqual(first, second);
+
+  const output = capturedLogs.join('\n');
+  assert.match(output, /Repo score:/);
+  assert.match(output, /Signals:/);
+  assert.match(output, /Next:/);
+});
+
+test('report command fails with clear error when policy file is missing', async () => {
+  const workspace = await mkdtemp(path.join(os.tmpdir(), 'gpa-report-policy-missing-'));
+  const outputDir = path.join(workspace, 'output');
+  await mkdir(outputDir, { recursive: true });
+
+  await writeFile(
+    path.join(outputDir, 'portfolio.json'),
+    JSON.stringify({
+      meta: {
+        generatedAt: '2026-03-03T00:00:00.000Z',
+        asOfDate: null,
+        count: 0
+      },
+      items: []
+    }, null, 2),
+    'utf8'
+  );
+
+  await assert.rejects(
+    () => runReportCommand({ 'output-dir': outputDir, policy: path.join(workspace, 'missing-policy.json') }),
+    /Policy file not found/
+  );
 });

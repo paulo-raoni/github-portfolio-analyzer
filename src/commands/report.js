@@ -8,6 +8,8 @@ const ALLOWED_FORMATS = new Set(['ascii', 'md', 'json', 'all']);
 export async function runReportCommand(options = {}) {
   const outputDir = typeof options['output-dir'] === 'string' ? options['output-dir'] : 'output';
   const formatOption = typeof options.format === 'string' ? options.format.toLowerCase() : 'all';
+  const policyPath = resolvePolicyPath(options);
+  const explain = options.explain === true;
 
   if (!ALLOWED_FORMATS.has(formatOption)) {
     throw new Error('Invalid --format value. Allowed values: ascii|md|json|all');
@@ -25,7 +27,8 @@ export async function runReportCommand(options = {}) {
   });
 
   const inventory = await readJsonFileIfExists(inventoryPath);
-  const reportModel = buildReportModel(portfolio, inventory);
+  const policyOverlay = await loadPolicyOverlay(policyPath);
+  const reportModel = buildReportModel(portfolio, inventory, { policyOverlay });
 
   const writtenPaths = [];
 
@@ -45,4 +48,121 @@ export async function runReportCommand(options = {}) {
   for (const filePath of writtenPaths) {
     console.log(`Wrote ${filePath}.`);
   }
+
+  if (explain) {
+    printNowExplain(reportModel);
+  }
+}
+
+function resolvePolicyPath(options) {
+  if (typeof options.policy === 'string') {
+    return options.policy;
+  }
+
+  if (typeof options.priorities === 'string') {
+    return options.priorities;
+  }
+
+  return null;
+}
+
+async function loadPolicyOverlay(policyPath) {
+  if (!policyPath) {
+    return null;
+  }
+
+  const policy = await readJsonFile(policyPath).catch((error) => {
+    if (error && error.code === 'ENOENT') {
+      throw new Error(`Policy file not found: ${policyPath}`);
+    }
+
+    throw error;
+  });
+
+  validatePolicyOverlay(policy, policyPath);
+  return policy;
+}
+
+function validatePolicyOverlay(policy, policyPath) {
+  if (policy === null || typeof policy !== 'object' || Array.isArray(policy)) {
+    throw new Error(`Invalid policy file at ${policyPath}: expected a JSON object.`);
+  }
+
+  if (policy.version !== undefined && policy.version !== 1) {
+    throw new Error(`Invalid policy file at ${policyPath}: unsupported version ${policy.version}. Expected 1.`);
+  }
+}
+
+function printNowExplain(reportModel) {
+  const nowItems = Array.isArray(reportModel?.items)
+    ? reportModel.items.filter((item) => item.priorityBand === 'now')
+    : [];
+
+  console.log('');
+  console.log('Explain mode: NOW ranking');
+  if (nowItems.length === 0) {
+    console.log('No items in NOW band.');
+    return;
+  }
+
+  for (const item of nowItems) {
+    const boosts = (item.priorityOverrides ?? [])
+      .filter((entry) => Number(entry.boost ?? 0) !== 0)
+      .map((entry) => `${formatSignedNumber(entry.boost)} (${entry.ruleId})`);
+    const reasons = (item.priorityOverrides ?? [])
+      .map((entry) => entry.reason)
+      .filter((entry) => typeof entry === 'string' && entry.trim().length > 0);
+
+    console.log(item.slug);
+    console.log(`  Base score: ${item.basePriorityScore}`);
+    console.log(`  Repo score: ${item.score}`);
+    console.log(`  Signals: ${buildBaseSignalsLine(item)}`);
+    console.log(`  Boosts: ${boosts.length > 0 ? boosts.join(', ') : 'none'}`);
+    console.log(`  Final score: ${item.finalPriorityScore}`);
+    console.log(`  Final band: ${item.priorityBand}`);
+    console.log(`  Reason(s): ${reasons.length > 0 ? reasons.join('; ') : 'none'}`);
+    console.log(`  Next: ${item.nextAction}`);
+  }
+}
+
+function buildBaseSignalsLine(item) {
+  const state = String(item.state ?? '').toLowerCase();
+  const completionLevel = Number(item.completionLevel ?? 0);
+  const effortEstimate = String(item.effortEstimate ?? '').toLowerCase();
+
+  const stateAdjustment = computeStateAdjustment(state);
+  const completionAdjustment = completionLevel >= 1 && completionLevel <= 3 ? 10 : 0;
+  const effortAdjustment = effortEstimate === 'l' || effortEstimate === 'xl' ? -10 : 0;
+
+  return [
+    `score=${Number(item.score ?? 0)}`,
+    `state(${state || 'unknown'})=${formatSignedNumber(stateAdjustment)}`,
+    `completion(CL${completionLevel})=${formatSignedNumber(completionAdjustment)}`,
+    `effort(${effortEstimate || 'm'})=${formatSignedNumber(effortAdjustment)}`
+  ].join('; ');
+}
+
+function computeStateAdjustment(state) {
+  if (state === 'active') {
+    return 10;
+  }
+
+  if (state === 'stale') {
+    return 5;
+  }
+
+  if (state === 'abandoned' || state === 'archived') {
+    return -20;
+  }
+
+  return 0;
+}
+
+function formatSignedNumber(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    return '+0';
+  }
+
+  return numeric >= 0 ? `+${numeric}` : String(numeric);
 }

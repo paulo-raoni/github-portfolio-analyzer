@@ -63,15 +63,15 @@ export function renderReportMarkdown(model) {
 
   lines.push('## Top 10 by Score');
   lines.push('');
-  lines.push('| # | Slug | Type | Score | State | Effort | Value | CL | Priority | Next Action |');
-  lines.push('|---|------|------|-------|-------|--------|-------|----|----------|-------------|');
+  lines.push('| # | Slug | Type | Score | State | Effort Estimate | Value | CL | Priority | Next Action |');
+  lines.push('|---|------|------|-------|-------|-----------------|-------|----|----------|-------------|');
 
   const top10 = model.summary.top10ByScore;
   if (top10.length === 0) {
     lines.push('| 1 | - | - | - | - | - | - | - | - | - |');
   } else {
     top10.forEach((item, index) => {
-      lines.push(`| ${index + 1} | ${escapeCell(item.slug)} | ${item.type} | ${item.score} | ${item.state} | ${item.effort} | ${item.value} | ${item.completionLevel} | ${item.priorityBand} | ${escapeCell(item.nextAction)} |`);
+      lines.push(`| ${index + 1} | ${escapeCell(item.slug)} | ${item.type} | ${item.score} | ${item.state} | ${item.effortEstimate} | ${item.value} | ${item.completionLevel} | ${item.priorityBand} | ${escapeCell(item.nextAction)} |`);
     });
   }
 
@@ -108,7 +108,7 @@ function renderAsciiBandSection(title, items) {
   }
 
   items.slice(0, 5).forEach((item, index) => {
-    lines.push(`${index + 1}) ${item.slug} — Score ${item.score} — CL${item.completionLevel} — Effort ${item.effort} — State ${item.state}`);
+    lines.push(`${index + 1}) ${item.slug} — Score ${item.score} — CL${item.completionLevel} — Effort ${item.effortEstimate} — State ${item.state}`);
     lines.push(`   Why: ${item.priorityWhy?.join('; ') ?? ''}`);
     lines.push(`   Next: ${item.nextAction}`);
   });
@@ -129,7 +129,7 @@ function renderMarkdownBandSection(title, items) {
   }
 
   items.slice(0, 5).forEach((item, index) => {
-    lines.push(`${index + 1}. **${item.slug}** — Score ${item.score} — CL${item.completionLevel} — Effort ${item.effort} — State ${item.state}`);
+    lines.push(`${index + 1}. **${item.slug}** — Score ${item.score} — CL${item.completionLevel} — Effort ${item.effortEstimate} — State ${item.state}`);
     lines.push(`   - Why: ${item.priorityWhy?.join('; ') ?? ''}`);
     lines.push(`   - Next: ${item.nextAction}`);
   });

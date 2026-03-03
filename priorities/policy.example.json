@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "id": "p1-example-group",
+      "match": { "slugContains": ["your-keyword-here"] },
+      "effects": { "boost": 20, "forceBand": "now", "tag": "P1" },
+      "reason": "Example: prioritize a group of projects by slug keyword."
+    }
+  ],
+  "pin": [
+    { "slug": "owner/repo-or-slug-here", "band": "now", "tag": "P1" }
+  ]
+}

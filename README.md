@@ -130,6 +130,70 @@ What happens:
 
 Default for `report --format` is `all`.
 
+## Optional Policy Overlay and Explain Mode
+
+The report command supports an optional policy overlay to guide prioritization without changing project taxonomy, state, or score.
+When no policy is provided, ranking remains neutral and deterministic using the built-in heuristics.
+
+### CLI examples
+
+```bash
+github-portfolio-analyzer report --format all
+github-portfolio-analyzer report --policy ./priorities/policy.json --format json
+github-portfolio-analyzer report --priorities ./priorities/policy.json --explain
+```
+
+### Local policy file setup
+
+Use the example as a starting point and keep your real policy file local:
+
+```bash
+cp priorities/policy.example.json priorities/policy.json
+```
+
+`priorities/policy.json` is git-ignored on purpose (local preferences).
+`priorities/policy.example.json` should remain tracked as the shared template.
+
+### Minimal policy example
+
+```json
+{
+  "version": 1,
+  "rules": [
+    {
+      "id": "focus-core-tooling",
+      "match": {
+        "type": ["repo"],
+        "category": ["tooling"],
+        "state": ["active", "stale"]
+      },
+      "effects": {
+        "boost": 10,
+        "tag": "core"
+      },
+      "reason": "Prioritize currently maintainable internal tooling."
+    }
+  ],
+  "pin": [
+    {
+      "slug": "developer-onboarding-checklist-generator",
+      "band": "now",
+      "tag": "manual-priority"
+    }
+  ]
+}
+```
+
+### Policy behavior guarantees
+
+- Rules are applied in deterministic `id` order.
+- Boosts are cumulative.
+- Pin band has highest precedence.
+- `forceBand` uses strongest precedence: `now > next > later > park`.
+- Policy overlay only affects report-level priority fields (`finalPriorityScore`, `priorityBand`, tags/overrides).
+- Taxonomy fields, item score, and item state remain unchanged.
+- The tool remains deterministic across runs for the same inputs.
+
 ## Output Directory Map
 
 ```text

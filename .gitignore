@@ -1,11 +1,47 @@
-# Environment
+# Node dependencies
+node_modules/
+
+# Environment files (keep examples)
 .env
-
-# Dependencies
-node_modules
-
-# Generated outputs
-output/
+.env.*
+!.env.example
 
 # Runtime logs
+*.log
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Coverage and test artifacts
+coverage/
+.nyc_output/
+
+# Build/cache noise
+.cache/
+.eslintcache
+*.tsbuildinfo
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Generated analyzer artifacts
+output/
+reports/
+/inventory.json
+/inventory.csv
+/ideas.json
+/portfolio.json
+/portfolio-summary.md
+/portfolio-report.json
+/portfolio-report.md
+/portfolio-report.txt
+
+# Local ideas input overrides (keep examples/docs tracked)
+ideas/input.local.json
+
+# User-specific prioritization (keep only example tracked)
+priorities/policy.json
