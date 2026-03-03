@@ -130,6 +130,43 @@ What happens:
 
 Default for `report --format` is `all`.
 
+## Integration Contract
+
+This section defines the stable integration points for external tools and orchestrators.
+
+### Available commands
+
+- `analyze`
+- `ingest-ideas`
+- `build-portfolio`
+- `report`
+
+### Relevant report flags
+
+- `report --policy`
+- `report --explain`
+
+### Canonical analyzer outputs
+
+- `output/inventory.json`
+- `output/portfolio.json`
+- `output/portfolio-report.json`
+
+### Optional local configuration
+
+- `priorities/policy.json`
+- This file is local and git-ignored.
+- Create it by copying:
+  `priorities/policy.example.json` -> `priorities/policy.json`
+
+### CLI version
+
+You can get the CLI version with:
+
+```bash
+github-portfolio-analyzer --version
+```
+
 ## Optional Policy Overlay and Explain Mode
 
 The report command supports an optional policy overlay to guide prioritization without changing project taxonomy, state, or score.

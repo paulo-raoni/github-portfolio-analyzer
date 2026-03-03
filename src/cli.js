@@ -3,10 +3,16 @@ import { runIngestIdeasCommand } from './commands/ingestIdeas.js';
 import { runBuildPortfolioCommand } from './commands/buildPortfolio.js';
 import { runReportCommand } from './commands/report.js';
 import { parseArgs } from './utils/args.js';
+import packageJson from '../package.json' with { type: 'json' };
 
 export async function runCli(argv) {
   const { positional, options } = parseArgs(argv);
   const [command] = positional;
+
+  if ((options.version === true && !command) || (command === '-v' && positional.length === 1)) {
+    console.log(packageJson.version);
+    return;
+  }
 
   switch (command) {
     case 'analyze':
@@ -20,6 +26,9 @@ export async function runCli(argv) {
       return;
     case 'report':
       await runReportCommand(options);
+      return;
+    case '-v':
+      console.log(packageJson.version);
       return;
     case '--help':
     case '-h':
