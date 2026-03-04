@@ -11,6 +11,137 @@ This project turns raw repository metadata into actionable prioritization output
 Most portfolios are incomplete: repositories are analyzed, but pending ideas live in notes and never enter prioritization.
 `github-portfolio-analyzer` unifies both streams and emits stable artifacts for reporting, planning, and backlog strategy.
 
+## Project Overview
+
+`github-portfolio-analyzer` is a deterministic CLI that analyzes GitHub repositories and project ideas, then produces portfolio and decision-report artifacts for execution planning.
+
+Design goals:
+
+- deterministic outputs for the same inputs
+- explainable ranking and priority signals
+- tool-agnostic artifacts (JSON, Markdown, ASCII)
+- orchestration-friendly CLI behavior for scripts, agents, and CI
+
+## Installation
+
+Install dependencies and run the CLI locally:
+
+```bash
+npm install
+github-portfolio-analyzer --version
+```
+
+If the global binary is not available yet, use:
+
+```bash
+node bin/github-portfolio-analyzer.js --version
+```
+
+## Quick Start
+
+Minimal workflow:
+
+```bash
+github-portfolio-analyzer analyze
+github-portfolio-analyzer ingest-ideas
+github-portfolio-analyzer build-portfolio
+github-portfolio-analyzer report
+```
+
+What each step does:
+
+- `analyze`: pulls repository metadata from GitHub API and writes inventory artifacts
+- `ingest-ideas`: normalizes/scoring ideas into `ideas.json`
+- `build-portfolio`: merges repositories and ideas into portfolio artifacts
+- `report`: creates decision-oriented report artifacts (JSON/MD/TXT)
+
+## CLI Commands
+
+- `analyze`: fetch and score GitHub repositories into inventory outputs
+- `ingest-ideas`: ingest idea records from JSON or interactive prompt
+- `build-portfolio`: merge repository inventory and ideas into unified portfolio outputs
+- `report`: generate decision reports from portfolio artifacts
+
+## CLI Flags
+
+- `--version`: print CLI version only
+- `--policy <path>`: apply optional policy overlay when generating reports
+- `--explain`: print NOW-band ranking explanation to console
+- `--output <dir>`: report-only output directory override for report artifacts
+- `--format json`: emit report JSON to stdout (artifacts are still written)
+- `--quiet`: suppress non-error logs
+- `--strict`: fail on unknown flags and invalid usage with exit code `2`
+
+## Required and Optional Inputs
+
+Required inputs depend on the command path:
+
+- For `analyze`: `.env` with `GITHUB_TOKEN` (and usually `GITHUB_USERNAME`)
+- For `report`: `output/portfolio.json` must exist
+
+Optional inputs:
+
+- `ideas/input.json` (or custom path via `ingest-ideas --input`)
+- `priorities/policy.json` for manual priority overlays in `report`
+- `--as-of YYYY-MM-DD` for deterministic snapshot control during `analyze`
+
+Create a local policy file:
+
+```bash
+cp priorities/policy.example.json priorities/policy.json
+```
+
+`priorities/policy.json` is local and git-ignored by design.
+
+## Output Artifacts
+
+Primary artifacts:
+
+- `output/inventory.json`
+- `output/portfolio.json`
+- `output/portfolio-report.json`
+- `output/portfolio-report.md`
+- `output/portfolio-report.txt`
+
+Output directory control:
+
+- `report --output <dir>` writes report artifacts to a custom directory
+- Pipeline commands also support `--output-dir <dir>` for their output roots
+
+## End-to-End Example
+
+```bash
+github-portfolio-analyzer analyze --as-of 2026-03-03
+github-portfolio-analyzer ingest-ideas --input ./ideas/input.json
+github-portfolio-analyzer build-portfolio
+github-portfolio-analyzer report --format json
+```
+
+After this run, you should have (in `output/` by default):
+
+- `inventory.json` and `inventory.csv`
+- `ideas.json`
+- `portfolio.json` and `portfolio-summary.md`
+- `portfolio-report.json`, `portfolio-report.md`, `portfolio-report.txt`
+
+## Machine Integration
+
+Use this CLI from scripts, CI jobs, or agent runtimes with deterministic artifacts and predictable exit codes.
+
+Programmatic JSON via stdout:
+
+```bash
+github-portfolio-analyzer report --format json --quiet
+```
+
+Custom report output directory:
+
+```bash
+github-portfolio-analyzer report --output ./runs/run-001
+```
+
+`--format json --quiet` is recommended for machine consumers because stdout contains only JSON unless an error occurs.
+
 ## 3-Minute Quickstart
 
 ### 1) Requirements
@@ -153,6 +284,11 @@ This section defines the stable integration points for external tools and orches
 - `output/portfolio.json`
 - `output/portfolio-report.json`
 
+### Machine-readable interface files
+
+- `analyzer.manifest.json`: static command/output manifest for external orchestrators
+- `schemas/portfolio-report.schema.json`: JSON Schema for `portfolio-report.json` validation
+
 ### Optional local configuration
 
 - `priorities/policy.json`
@@ -176,6 +312,13 @@ github-portfolio-analyzer --version
 ### JSON schema
 
 - `schemas/portfolio-report.schema.json` validates the `output/portfolio-report.json` structure.
+- External systems can use this schema together with `analyzer.manifest.json` as the integration contract.
+
+## Exit Codes
+
+- `0`: success
+- `1`: operational failure (runtime/file/network/auth errors)
+- `2`: invalid usage (for example invalid command or `--strict` unknown flag)
 
 ## Optional Policy Overlay and Explain Mode
 
