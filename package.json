@@ -12,6 +12,7 @@
     "ingest-ideas": "node bin/github-portfolio-analyzer.js ingest-ideas",
     "build-portfolio": "node bin/github-portfolio-analyzer.js build-portfolio",
     "report": "node bin/github-portfolio-analyzer.js report",
+    "lint": "eslint .",
     "test": "node --test"
   },
   "engines": {
@@ -19,5 +20,8 @@
   },
   "dependencies": {
     "dotenv": "^17.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^10.0.2"
   }
 }

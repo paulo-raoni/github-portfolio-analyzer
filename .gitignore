@@ -31,6 +31,11 @@ Thumbs.db
 # Generated analyzer artifacts
 output/
 reports/
+tmp-test/
+tmp/
+.tmp/
+runs/
+.runs/
 /inventory.json
 /inventory.csv
 /ideas.json
