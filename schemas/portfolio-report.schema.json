@@ -1,0 +1,255 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github-portfolio-analyzer.local/schemas/portfolio-report.schema.json",
+  "title": "GitHub Portfolio Analyzer Report",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["meta", "summary", "matrix", "items"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["generatedAt", "asOfDate", "owner", "counts"],
+      "properties": {
+        "generatedAt": { "type": "string" },
+        "asOfDate": {
+          "type": ["string", "null"],
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "owner": { "type": ["string", "null"] },
+        "counts": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["total", "repos", "ideas"],
+          "properties": {
+            "total": { "type": "number" },
+            "repos": { "type": "number" },
+            "ideas": { "type": "number" }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "asOfDate": { "type": "string" } }
+          },
+          "then": {
+            "properties": {
+              "asOfDate": {
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["byState", "top10ByScore", "now", "next", "later", "park"],
+      "properties": {
+        "byState": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["active", "stale", "abandoned", "archived", "idea", "reference-only"],
+          "properties": {
+            "active": { "type": "number" },
+            "stale": { "type": "number" },
+            "abandoned": { "type": "number" },
+            "archived": { "type": "number" },
+            "idea": { "type": "number" },
+            "reference-only": { "type": "number" }
+          }
+        },
+        "top10ByScore": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/summaryItem" }
+        },
+        "now": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/summaryItem" }
+        },
+        "next": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/summaryItem" }
+        },
+        "later": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/summaryItem" }
+        },
+        "park": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/summaryItem" }
+        }
+      }
+    },
+    "matrix": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["completionByEffort"],
+      "properties": {
+        "completionByEffort": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["CL0", "CL1", "CL2", "CL3", "CL4", "CL5"],
+          "properties": {
+            "CL0": { "$ref": "#/$defs/matrixRow" },
+            "CL1": { "$ref": "#/$defs/matrixRow" },
+            "CL2": { "$ref": "#/$defs/matrixRow" },
+            "CL3": { "$ref": "#/$defs/matrixRow" },
+            "CL4": { "$ref": "#/$defs/matrixRow" },
+            "CL5": { "$ref": "#/$defs/matrixRow" }
+          }
+        }
+      }
+    },
+    "items": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/item" }
+    }
+  },
+  "$defs": {
+    "priorityOverride": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["ruleId", "boost", "reason"],
+      "properties": {
+        "ruleId": { "type": "string" },
+        "boost": { "type": "number" },
+        "forceBand": {
+          "type": "string",
+          "enum": ["now", "next", "later", "park"]
+        },
+        "reason": { "type": "string" }
+      }
+    },
+    "summaryItem": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "slug",
+        "type",
+        "score",
+        "state",
+        "effort",
+        "effortEstimate",
+        "value",
+        "completionLevel",
+        "basePriorityScore",
+        "finalPriorityScore",
+        "priorityBand",
+        "priorityOverrides",
+        "priorityWhy",
+        "nextAction"
+      ],
+      "properties": {
+        "slug": { "type": "string" },
+        "type": {
+          "type": "string",
+          "enum": ["repo", "idea"]
+        },
+        "score": { "type": "number" },
+        "state": { "type": "string" },
+        "effort": { "type": "string" },
+        "effortEstimate": {
+          "type": "string",
+          "enum": ["xs", "s", "m", "l", "xl"]
+        },
+        "value": { "type": "string" },
+        "completionLevel": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "basePriorityScore": { "type": "number" },
+        "finalPriorityScore": { "type": "number" },
+        "priorityBand": {
+          "type": "string",
+          "enum": ["now", "next", "later", "park"]
+        },
+        "priorityTag": { "type": "string" },
+        "priorityOverrides": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/priorityOverride" }
+        },
+        "priorityWhy": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "nextAction": { "type": "string" }
+      }
+    },
+    "item": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "slug",
+        "type",
+        "title",
+        "score",
+        "state",
+        "effort",
+        "value",
+        "completionLevel",
+        "completionLabel",
+        "effortEstimate",
+        "basePriorityScore",
+        "finalPriorityScore",
+        "priorityBand",
+        "priorityOverrides",
+        "priorityWhy",
+        "nextAction"
+      ],
+      "properties": {
+        "slug": { "type": "string" },
+        "type": {
+          "type": "string",
+          "enum": ["repo", "idea"]
+        },
+        "title": { "type": "string" },
+        "score": { "type": "number" },
+        "state": { "type": "string" },
+        "effort": { "type": "string" },
+        "value": { "type": "string" },
+        "completionLevel": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "completionLabel": { "type": "string" },
+        "effortEstimate": {
+          "type": "string",
+          "enum": ["xs", "s", "m", "l", "xl"]
+        },
+        "basePriorityScore": { "type": "number" },
+        "finalPriorityScore": { "type": "number" },
+        "priorityBand": {
+          "type": "string",
+          "enum": ["now", "next", "later", "park"]
+        },
+        "priorityTag": { "type": "string" },
+        "priorityOverrides": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/priorityOverride" }
+        },
+        "priorityWhy": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "nextAction": { "type": "string" }
+      }
+    },
+    "matrixRow": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["xs", "s", "m", "l", "xl"],
+      "properties": {
+        "xs": { "type": "number" },
+        "s": { "type": "number" },
+        "m": { "type": "number" },
+        "l": { "type": "number" },
+        "xl": { "type": "number" }
+      }
+    }
+  }
+}

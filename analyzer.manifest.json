@@ -5,11 +5,14 @@
     { "id": "analyze" },
     { "id": "ingest-ideas" },
     { "id": "build-portfolio" },
-    { "id": "report", "flags": ["--policy", "--explain", "--output", "--format"] }
+    { "id": "report", "flags": ["--policy", "--explain", "--output", "--format", "--quiet"] }
   ],
   "outputs": [
     "output/inventory.json",
     "output/portfolio.json",
     "output/portfolio-report.json"
-  ]
+  ],
+  "schemas": {
+    "portfolioReport": "schemas/portfolio-report.schema.json"
+  }
 }

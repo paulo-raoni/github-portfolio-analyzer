@@ -6,9 +6,22 @@ import { parseArgs } from './utils/args.js';
 import packageJson from '../package.json' with { type: 'json' };
 import { UsageError } from './errors.js';
 
+const GLOBAL_OPTIONS = new Set(['help', 'strict', 'version']);
+const COMMAND_OPTIONS = {
+  analyze: new Set(['as-of', 'output-dir']),
+  'ingest-ideas': new Set(['input', 'prompt', 'output-dir']),
+  'build-portfolio': new Set(['output-dir']),
+  report: new Set(['output-dir', 'output', 'format', 'policy', 'priorities', 'explain', 'quiet'])
+};
+
 export async function runCli(argv) {
   const { positional, options } = parseArgs(argv);
   const [command] = positional;
+  const strictMode = options.strict === true || options.strict === 'true';
+
+  if (strictMode) {
+    validateStrictOptions(command, options);
+  }
 
   if ((options.version === true && !command) || (command === '-v' && positional.length === 1)) {
     console.log(packageJson.version);
@@ -44,6 +57,7 @@ export async function runCli(argv) {
 function printHelp() {
   console.log('github-portfolio-analyzer');
   console.log('Usage: github-portfolio-analyzer <command> [options]');
+  console.log('  --strict               Global: fail on unknown flags (exit code 2)');
   console.log('Commands:');
   console.log('  analyze          Analyze GitHub repositories and build inventory outputs');
   console.log('  ingest-ideas     Add or update manual project ideas');
@@ -68,4 +82,22 @@ function printHelp() {
   console.log('  --policy PATH          Optional policy overlay JSON file');
   console.log('  --priorities PATH      Alias for --policy');
   console.log('  --explain              Print NOW ranking explainability to console');
+  console.log('  --quiet                Suppress non-error logs');
+}
+
+function validateStrictOptions(command, options) {
+  const allowedOptions = new Set(GLOBAL_OPTIONS);
+  const commandOptions = COMMAND_OPTIONS[command];
+
+  if (commandOptions) {
+    for (const key of commandOptions) {
+      allowedOptions.add(key);
+    }
+  }
+
+  const unknown = Object.keys(options).filter((key) => !allowedOptions.has(key));
+  if (unknown.length > 0) {
+    const unknownFlags = unknown.map((key) => `--${key}`).join(', ');
+    throw new UsageError(`Unknown option(s): ${unknownFlags}`);
+  }
 }

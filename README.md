@@ -145,6 +145,7 @@ This section defines the stable integration points for external tools and orches
 
 - `report --policy`
 - `report --explain`
+- `report --quiet`
 
 ### Canonical analyzer outputs
 
@@ -159,6 +160,11 @@ This section defines the stable integration points for external tools and orches
 - Create it by copying:
   `priorities/policy.example.json` -> `priorities/policy.json`
 
+### Optional strict mode
+
+- Use `--strict` to fail on unknown flags with exit code `2`.
+- Without `--strict`, existing permissive parsing behavior remains unchanged.
+
 ### CLI version
 
 You can get the CLI version with:
@@ -166,6 +172,10 @@ You can get the CLI version with:
 ```bash
 github-portfolio-analyzer --version
 ```
+
+### JSON schema
+
+- `schemas/portfolio-report.schema.json` validates the `output/portfolio-report.json` structure.
 
 ## Optional Policy Overlay and Explain Mode
 

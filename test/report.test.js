@@ -215,6 +215,131 @@ test('report command generates all outputs from portfolio-only input', async () 
   assert.equal(model.meta.counts.ideas, 1);
 });
 
+test('report command quiet mode suppresses non-error logs', { concurrency: false }, async () => {
+  const workspace = await mkdtemp(path.join(os.tmpdir(), 'gpa-report-quiet-'));
+  const outputDir = path.join(workspace, 'output');
+  await mkdir(outputDir, { recursive: true });
+
+  await writeFile(
+    path.join(outputDir, 'portfolio.json'),
+    JSON.stringify({
+      meta: {
+        generatedAt: '2026-03-03T00:00:00.000Z',
+        asOfDate: null,
+        count: 1
+      },
+      items: [
+        {
+          slug: 'single-idea',
+          type: 'idea',
+          title: 'Single Idea',
+          score: 81,
+          state: 'idea',
+          effort: 'm',
+          value: 'medium',
+          taxonomyMeta: { sources: { effort: 'default' } },
+          nextAction: 'Define MVP — Done when: acceptance checks are documented.'
+        }
+      ]
+    }, null, 2),
+    'utf8'
+  );
+
+  const capturedLogs = [];
+  const capturedErrors = [];
+  const originalLog = console.log;
+  const originalError = console.error;
+  console.log = (...args) => {
+    capturedLogs.push(args.join(' '));
+  };
+  console.error = (...args) => {
+    capturedErrors.push(args.join(' '));
+  };
+
+  try {
+    await runReportCommand({ 'output-dir': outputDir, format: 'all', quiet: true });
+  } finally {
+    console.log = originalLog;
+    console.error = originalError;
+  }
+
+  assert.equal(await fileExists(path.join(outputDir, 'portfolio-report.json')), true);
+  assert.equal(await fileExists(path.join(outputDir, 'portfolio-report.md')), true);
+  assert.equal(await fileExists(path.join(outputDir, 'portfolio-report.txt')), true);
+  assert.equal(capturedLogs.length, 0);
+  assert.equal(capturedErrors.length, 0);
+});
+
+test('report command format json with quiet writes stdout JSON only', { concurrency: false }, async () => {
+  const workspace = await mkdtemp(path.join(os.tmpdir(), 'gpa-report-quiet-json-'));
+  const outputDir = path.join(workspace, 'output');
+  await mkdir(outputDir, { recursive: true });
+
+  await writeFile(
+    path.join(outputDir, 'portfolio.json'),
+    JSON.stringify({
+      meta: {
+        generatedAt: '2026-03-03T00:00:00.000Z',
+        asOfDate: null,
+        count: 1
+      },
+      items: [
+        {
+          slug: 'single-idea',
+          type: 'idea',
+          title: 'Single Idea',
+          score: 81,
+          state: 'idea',
+          effort: 'm',
+          value: 'medium',
+          taxonomyMeta: { sources: { effort: 'default' } },
+          nextAction: 'Define MVP — Done when: acceptance checks are documented.'
+        }
+      ]
+    }, null, 2),
+    'utf8'
+  );
+
+  let capturedStdout = '';
+  const capturedLogs = [];
+  const capturedErrors = [];
+
+  const originalLog = console.log;
+  const originalError = console.error;
+  const originalStdoutWrite = process.stdout.write;
+
+  console.log = (...args) => {
+    capturedLogs.push(args.join(' '));
+  };
+  console.error = (...args) => {
+    capturedErrors.push(args.join(' '));
+  };
+  process.stdout.write = ((chunk, _encoding, callback) => {
+    capturedStdout += String(chunk);
+    if (typeof callback === 'function') {
+      callback();
+    }
+    return true;
+  });
+
+  try {
+    await runReportCommand({ 'output-dir': outputDir, format: 'json', quiet: true });
+  } finally {
+    console.log = originalLog;
+    console.error = originalError;
+    process.stdout.write = originalStdoutWrite;
+  }
+
+  assert.equal(await fileExists(path.join(outputDir, 'portfolio-report.json')), true);
+  assert.equal(capturedErrors.length, 0);
+  assert.equal(capturedLogs.length, 0);
+  assert.equal(capturedStdout.length > 0, true);
+
+  const stdoutModel = JSON.parse(capturedStdout);
+  const fileModel = await readJsonFile(path.join(outputDir, 'portfolio-report.json'));
+  assert.deepEqual(stdoutModel, fileModel);
+});
+
 test('no-policy report output is identical to empty policy overlay', () => {
   const portfolio = {
     meta: { asOfDate: '2026-03-03' },

@@ -12,6 +12,7 @@ export async function runReportCommand(options = {}) {
   const formatOption = typeof options.format === 'string' ? options.format.toLowerCase() : 'all';
   const policyPath = resolvePolicyPath(options);
   const explain = options.explain === true;
+  const quiet = options.quiet === true || options.quiet === 'true';
 
   if (!ALLOWED_FORMATS.has(formatOption)) {
     throw new UsageError('Invalid --format value. Allowed values: ascii|md|json|all');
@@ -46,17 +47,19 @@ export async function runReportCommand(options = {}) {
     writtenPaths.push(await writeReportAscii(outputDir, reportModel));
   }
 
-  const log = formatOption === 'json' ? console.error : console.log;
-  log(`Generated portfolio decision report for ${reportModel.meta.counts.total} items.`);
-  for (const filePath of writtenPaths) {
-    log(`Wrote ${filePath}.`);
+  if (!quiet) {
+    const log = formatOption === 'json' ? console.error : console.log;
+    log(`Generated portfolio decision report for ${reportModel.meta.counts.total} items.`);
+    for (const filePath of writtenPaths) {
+      log(`Wrote ${filePath}.`);
+    }
   }
 
   if (formatOption === 'json') {
     process.stdout.write(`${JSON.stringify(reportModel, null, 2)}\n`);
   }
 
-  if (explain) {
+  if (explain && !quiet) {
     printNowExplain(reportModel);
   }
 }
