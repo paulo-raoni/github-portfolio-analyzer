@@ -4,6 +4,7 @@ import { runBuildPortfolioCommand } from './commands/buildPortfolio.js';
 import { runReportCommand } from './commands/report.js';
 import { parseArgs } from './utils/args.js';
 import packageJson from '../package.json' with { type: 'json' };
+import { UsageError } from './errors.js';
 
 export async function runCli(argv) {
   const { positional, options } = parseArgs(argv);
@@ -32,9 +33,11 @@ export async function runCli(argv) {
       return;
     case '--help':
     case '-h':
-    default:
+    case undefined:
       printHelp();
       return;
+    default:
+      throw new UsageError(`Invalid command: ${command}`);
   }
 }
 

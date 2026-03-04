@@ -5,7 +5,7 @@
     { "id": "analyze" },
     { "id": "ingest-ideas" },
     { "id": "build-portfolio" },
-    { "id": "report", "flags": ["--policy", "--explain"] }
+    { "id": "report", "flags": ["--policy", "--explain", "--output", "--format"] }
   ],
   "outputs": [
     "output/inventory.json",
