@@ -6,6 +6,42 @@ This project turns raw repository metadata into actionable prioritization output
 ---
 **Tagline:** From repository inventory to execution decisions in minutes.
 
+## Table of Contents
+
+- [Why This Tool Exists](#why-this-tool-exists)
+- [Project Overview](#project-overview)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [CLI Commands](#cli-commands)
+- [CLI Flags](#cli-flags)
+- [Required and Optional Inputs](#required-and-optional-inputs)
+- [Output Artifacts](#output-artifacts)
+- [End-to-End Example](#end-to-end-example)
+- [Machine Integration](#machine-integration)
+- [Flow Overview](#flow-overview)
+- [3-Minute Quickstart](#3-minute-quickstart)
+- [End-to-End Tutorial](#end-to-end-tutorial)
+- [Command Reference](#command-reference)
+- [Integration Contract](#integration-contract)
+- [Exit Codes](#exit-codes)
+- [Optional Policy Overlay and Explain Mode](#optional-policy-overlay-and-explain-mode)
+- [Output Directory Map](#output-directory-map)
+- [Data Contracts](#data-contracts)
+- [Decision Model (Report)](#decision-model-report)
+- [Determinism and Time Rules](#determinism-and-time-rules)
+- [nextAction Validation](#nextaction-validation)
+- [Architecture](#architecture)
+- [Testing and Quality](#testing-and-quality)
+- [Troubleshooting](#troubleshooting)
+- [License and Contribution](#license-and-contribution)
+
+## Documentation
+
+- [Agent Guide](AGENT_GUIDE.md)
+- [Integration Guide](docs/INTEGRATION.md)
+- [Analyzer Manifest](analyzer.manifest.json)
+- [Portfolio Report Schema](schemas/portfolio-report.schema.json)
+
 ## Why This Tool Exists
 
 Most portfolios are incomplete: repositories are analyzed, but pending ideas live in notes and never enter prioritization.
@@ -141,6 +177,24 @@ github-portfolio-analyzer report --output ./runs/run-001
 ```
 
 `--format json --quiet` is recommended for machine consumers because stdout contains only JSON unless an error occurs.
+See [Integration Contract](#integration-contract) and the dedicated [Integration Guide](docs/INTEGRATION.md).
+
+## Flow Overview
+
+```mermaid
+flowchart TD
+  A[analyze] --> I[output/inventory.json]
+  A --> IC[output/inventory.csv]
+  B[ingest-ideas] --> IJ[output/ideas.json]
+  I --> C[build-portfolio]
+  IJ --> C
+  C --> P[output/portfolio.json]
+  D[report] --> R[output/portfolio-report.json]
+  D --> RM[output/portfolio-report.md]
+  D --> RT[output/portfolio-report.txt]
+  POL[priorities/policy.json (optional)] --> D
+  D -->|--format json --quiet| STDOUT[(stdout JSON)]
+```
 
 ## 3-Minute Quickstart
 
@@ -264,6 +318,7 @@ Default for `report --format` is `all`.
 ## Integration Contract
 
 This section defines the stable integration points for external tools and orchestrators.
+For a fast first run path, start with [Quick Start](#quick-start).
 
 ### Available commands
 
