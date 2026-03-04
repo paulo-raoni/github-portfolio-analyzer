@@ -60,3 +60,37 @@ flowchart LR
   FILE --> SCHEMA[Validate with schemas/portfolio-report.schema.json]
   OUT --> CONSUMER[Downstream system]
 ```
+
+## Analyzer as Plugin
+
+`github-portfolio-analyzer` can run as a plugin inside larger orchestration systems such as Agentic Factory, alongside other analyzers that share manifest/schema contracts.
+
+```mermaid
+flowchart LR
+
+ORCH[Agentic Factory / External Orchestrator]
+
+subgraph Analyzer Plugins
+A1[github-portfolio-analyzer]
+A2[other-analyzer-plugin]
+end
+
+subgraph Contracts
+M[analyzer.manifest.json]
+S[portfolio-report.schema.json]
+end
+
+subgraph Outputs
+R[portfolio-report.json]
+STATE[factory state / registry]
+end
+
+ORCH --> A1
+ORCH --> A2
+
+A1 --> M
+A1 --> S
+
+A1 --> R
+R --> STATE
+```

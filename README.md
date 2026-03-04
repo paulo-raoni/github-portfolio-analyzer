@@ -568,6 +568,52 @@ src/
   utils/    (args, time, slug, retry, concurrency, nextAction)
 ```
 
+### Architecture Overview
+
+```mermaid
+flowchart LR
+
+subgraph User Layer
+U[Developer / Script / Agent]
+end
+
+subgraph CLI Layer
+A[analyze]
+B[ingest-ideas]
+C[build-portfolio]
+D[report]
+end
+
+subgraph Core Engine
+S1[GitHub API Client]
+S2[Ideas Normalizer]
+S3[Portfolio Builder]
+S4[Decision Engine]
+end
+
+subgraph Artifacts
+O1[inventory.json]
+O2[ideas.json]
+O3[portfolio.json]
+O4[portfolio-report.json]
+end
+
+U --> A
+U --> B
+U --> C
+U --> D
+
+A --> S1
+B --> S2
+C --> S3
+D --> S4
+
+S1 --> O1
+S2 --> O2
+S3 --> O3
+S4 --> O4
+```
+
 Implementation characteristics:
 
 - Minimal dependencies (`dotenv` only)
