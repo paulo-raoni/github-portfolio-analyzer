@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { buildReportModel } from '../core/report.js';
+import { loadPresentationOverrides, applyPresentationOverrides } from '../core/presentationOverrides.js';
 import { readJsonFile, readJsonFileIfExists } from '../io/files.js';
 import { writeReportAscii, writeReportJson, writeReportMarkdown } from '../io/report.js';
 import { UsageError } from '../errors.js';
@@ -31,7 +32,13 @@ export async function runReportCommand(options = {}) {
 
   const inventory = await readJsonFileIfExists(inventoryPath);
   const policyOverlay = await loadPolicyOverlay(policyPath);
+  const presentationOverridesPath = resolvePresentationOverridesPath(options);
+  const presentationOverrides = await loadPresentationOverrides(presentationOverridesPath);
   const reportModel = buildReportModel(portfolio, inventory, { policyOverlay });
+
+  if (presentationOverrides.size > 0) {
+    reportModel.items = applyPresentationOverrides(reportModel.items, presentationOverrides);
+  }
 
   const writtenPaths = [];
 
@@ -62,6 +69,13 @@ export async function runReportCommand(options = {}) {
   if (explain && !quiet) {
     printNowExplain(reportModel);
   }
+}
+
+function resolvePresentationOverridesPath(options) {
+  if (typeof options['presentation-overrides'] === 'string') {
+    return options['presentation-overrides'];
+  }
+  return 'priorities/presentation-overrides.json';
 }
 
 function resolvePolicyPath(options) {

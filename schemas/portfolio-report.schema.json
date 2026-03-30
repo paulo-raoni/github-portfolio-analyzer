@@ -243,7 +243,11 @@
           "items": { "type": "string" }
         },
         "htmlUrl": { "type": "string" },
-        "homepage": { "type": "string" }
+        "homepage": { "type": "string" },
+        "presentationState": {
+          "type": "string",
+          "enum": ["featured", "complete", "in-progress", "salvageable", "learning", "archived", "hidden"]
+        }
       }
     },
     "matrixRow": {

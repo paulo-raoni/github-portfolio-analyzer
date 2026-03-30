@@ -10,6 +10,7 @@ import {
 } from '../src/core/report.js';
 import { runReportCommand } from '../src/commands/report.js';
 import { readJsonFile, fileExists } from '../src/io/files.js';
+import { loadPresentationOverrides, applyPresentationOverrides } from '../src/core/presentationOverrides.js';
 
 test('computeCompletionLevel follows repo boundaries and idea default', () => {
   const repoBase = {
@@ -700,6 +701,82 @@ test('buildReportModel omits presentation fields when absent', () => {
   assert.equal(Object.hasOwn(item, 'topics'), false);
   assert.equal(Object.hasOwn(item, 'htmlUrl'), false);
   assert.equal(Object.hasOwn(item, 'homepage'), false);
+});
+
+test('applyPresentationOverrides sets presentationState on matching items', () => {
+  const items = [
+    { slug: 'bdralph', type: 'repo' },
+    { slug: 'other-repo', type: 'repo' }
+  ];
+  const overridesMap = new Map([
+    ['bdralph', { presentationState: 'featured' }]
+  ]);
+  const result = applyPresentationOverrides(items, overridesMap);
+  assert.equal(result[0].presentationState, 'featured');
+  assert.equal(Object.hasOwn(result[1], 'presentationState'), false);
+});
+
+test('loadPresentationOverrides ignores invalid presentationState values', async () => {
+  const workspace = await mkdtemp(path.join(os.tmpdir(), 'gpa-pres-overrides-'));
+  const filePath = path.join(workspace, 'overrides.json');
+  await writeFile(filePath, JSON.stringify({
+    version: 1,
+    items: [
+      { slug: 'valid-repo', presentationState: 'featured' },
+      { slug: 'bad-repo', presentationState: 'invalid-state' },
+      { slug: 'missing-state' }
+    ]
+  }), 'utf8');
+  const map = await loadPresentationOverrides(filePath);
+  assert.equal(map.size, 1);
+  assert.equal(map.get('valid-repo').presentationState, 'featured');
+});
+
+test('loadPresentationOverrides returns empty map when file does not exist', async () => {
+  const map = await loadPresentationOverrides('/non/existent/path.json');
+  assert.equal(map.size, 0);
+});
+
+test('report command applies presentation overrides to items', async () => {
+  const workspace = await mkdtemp(path.join(os.tmpdir(), 'gpa-report-pres-'));
+  const outputDir = path.join(workspace, 'output');
+  await mkdir(outputDir, { recursive: true });
+
+  await writeFile(
+    path.join(outputDir, 'portfolio.json'),
+    JSON.stringify({
+      meta: { generatedAt: '2026-03-03T00:00:00.000Z', asOfDate: null, count: 1 },
+      items: [
+        {
+          slug: 'my-project',
+          type: 'repo',
+          title: 'My Project',
+          score: 75,
+          state: 'active',
+          effort: 'm',
+          value: 'high',
+          taxonomyMeta: { sources: { effort: 'user' } },
+          nextAction: 'Ship v1 — Done when: release is tagged.'
+        }
+      ]
+    }, null, 2),
+    'utf8'
+  );
+
+  const overridesPath = path.join(workspace, 'presentation-overrides.json');
+  await writeFile(overridesPath, JSON.stringify({
+    version: 1,
+    items: [{ slug: 'my-project', presentationState: 'featured' }]
+  }), 'utf8');
+
+  await runReportCommand({
+    'output-dir': outputDir,
+    format: 'json',
+    'presentation-overrides': overridesPath
+  });
+
+  const model = await readJsonFile(path.join(outputDir, 'portfolio-report.json'));
+  assert.equal(model.items[0].presentationState, 'featured');
 });
 
 test('report command fails with clear error when policy file is missing', async () => {
