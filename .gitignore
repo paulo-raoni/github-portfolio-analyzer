@@ -50,3 +50,9 @@ ideas/input.local.json
 
 # User-specific prioritization (keep only example tracked)
 priorities/policy.json
+
+# Claude Code — config local OAuth e permissões (nunca commitar)
+.claude/
+
+# Overrides de apresentação para o portfolio (M1, arquivo local)
+priorities/presentation-overrides.json
