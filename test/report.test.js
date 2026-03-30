@@ -644,6 +644,64 @@ test('report command explain mode does not change report json', { concurrency: f
   assert.match(output, /Next:/);
 });
 
+test('buildReportModel preserves presentation fields from portfolio items', () => {
+  const portfolio = {
+    meta: { asOfDate: '2026-03-03' },
+    items: [
+      {
+        slug: 'my-tool',
+        type: 'repo',
+        fullName: 'owner/my-tool',
+        score: 70,
+        state: 'active',
+        effort: 'm',
+        value: 'high',
+        language: 'TypeScript',
+        topics: ['cli', 'node'],
+        htmlUrl: 'https://github.com/owner/my-tool',
+        homepage: 'https://my-tool.dev',
+        taxonomyMeta: { sources: { effort: 'user' } },
+        structuralHealth: { hasReadme: true, hasPackageJson: true, hasCi: true, hasTests: true },
+        sizeKb: 300,
+        nextAction: 'Ship v2 — Done when: changelog is published.'
+      }
+    ]
+  };
+  const report = buildReportModel(portfolio, null, { generatedAt: '2026-03-03T00:00:00.000Z' });
+  const item = report.items[0];
+  assert.equal(item.language, 'TypeScript');
+  assert.deepEqual(item.topics, ['cli', 'node']);
+  assert.equal(item.htmlUrl, 'https://github.com/owner/my-tool');
+  assert.equal(item.homepage, 'https://my-tool.dev');
+});
+
+test('buildReportModel omits presentation fields when absent', () => {
+  const portfolio = {
+    meta: { asOfDate: '2026-03-03' },
+    items: [
+      {
+        slug: 'bare-repo',
+        type: 'repo',
+        fullName: 'owner/bare-repo',
+        score: 50,
+        state: 'stale',
+        effort: 'm',
+        value: 'medium',
+        taxonomyMeta: { sources: { effort: 'user' } },
+        structuralHealth: { hasReadme: true, hasPackageJson: false, hasCi: false, hasTests: false },
+        sizeKb: 100,
+        nextAction: 'Triage — Done when: status is documented.'
+      }
+    ]
+  };
+  const report = buildReportModel(portfolio, null, { generatedAt: '2026-03-03T00:00:00.000Z' });
+  const item = report.items[0];
+  assert.equal(Object.hasOwn(item, 'language'), false);
+  assert.equal(Object.hasOwn(item, 'topics'), false);
+  assert.equal(Object.hasOwn(item, 'htmlUrl'), false);
+  assert.equal(Object.hasOwn(item, 'homepage'), false);
+});
+
 test('report command fails with clear error when policy file is missing', async () => {
   const workspace = await mkdtemp(path.join(os.tmpdir(), 'gpa-report-policy-missing-'));
   const outputDir = path.join(workspace, 'output');

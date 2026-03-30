@@ -195,7 +195,12 @@ export function buildReportModel(portfolioData, inventoryData = null, options = 
       priorityOverrides,
       priorityScore: finalPriorityScore,
       priorityWhy: priorityWhyWithPolicy,
-      nextAction: String(item.nextAction ?? '').trim()
+      nextAction: String(item.nextAction ?? '').trim(),
+      // presentation fields — passed directly from portfolio item
+      ...(item.language != null ? { language: item.language } : {}),
+      ...(Array.isArray(item.topics) && item.topics.length > 0 ? { topics: item.topics } : {}),
+      ...(item.htmlUrl != null ? { htmlUrl: item.htmlUrl } : {}),
+      ...(item.homepage != null ? { homepage: item.homepage } : {})
     };
   });
 

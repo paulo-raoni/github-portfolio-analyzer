@@ -236,7 +236,14 @@
           "type": "array",
           "items": { "type": "string" }
         },
-        "nextAction": { "type": "string" }
+        "nextAction": { "type": "string" },
+        "language": { "type": "string" },
+        "topics": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "htmlUrl": { "type": "string" },
+        "homepage": { "type": "string" }
       }
     },
     "matrixRow": {

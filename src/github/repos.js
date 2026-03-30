@@ -42,6 +42,9 @@ export function normalizeRepository(repo) {
     htmlUrl: repo.html_url,
     description: repo.description,
     language: repo.language,
+    homepage: typeof repo.homepage === 'string' && repo.homepage.trim().length > 0
+      ? repo.homepage.trim()
+      : null,
     stargazersCount: repo.stargazers_count,
     forksCount: repo.forks_count,
     openIssuesCount: repo.open_issues_count,
