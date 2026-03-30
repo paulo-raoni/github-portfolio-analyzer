@@ -18,7 +18,7 @@ node bin/github-portfolio-analyzer.js report \
   --output-dir "$OUTPUT_DIR" \
   --output "$OUTPUT_DIR"
 
-# Move o JSON para o path esperado pelo worker via volume compartilhado
+# Copy JSON to the path expected by the worker via shared volume
 cp "$OUTPUT_DIR/portfolio-report.json" "$REPORT_PATH"
 
 echo "[analyzer] Done. Report written to $REPORT_PATH"
