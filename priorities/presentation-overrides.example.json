@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "slug": "repo-slug-here",
+      "presentationState": "featured"
+    },
+    {
+      "slug": "another-repo",
+      "presentationState": "hidden"
+    }
+  ]
+}
