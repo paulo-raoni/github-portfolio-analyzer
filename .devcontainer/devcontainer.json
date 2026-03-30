@@ -1,18 +1,31 @@
 {
-  "name": "github-portfolio-analyzer (node)",
+  "name": "github-portfolio-analyzer",
   "build": {
     "dockerfile": "Dockerfile"
   },
-  "features": {},
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
   "customizations": {
     "vscode": {
       "extensions": [
+        "anthropic.claude-code",
         "dbaeumer.vscode-eslint",
-        "esbenp.prettier-vscode"
+        "eamodio.gitlens",
+        "mhutchie.git-graph",
+        "esbenp.prettier-vscode",
+        "vscode-icons-team.vscode-icons",
+        "shd101wyy.markdown-preview-enhanced"
       ]
     }
   },
-  "remoteUser": "node",
-  "postCreateCommand": "node -v && npm -v",
-  "updateRemoteUserUID": true
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "containerEnv": {
+    "GITHUB_TOKEN": "${localEnv:GITHUB_TOKEN}",
+    "GITHUB_USERNAME": "${localEnv:GITHUB_USERNAME}",
+    "GIT_USER_EMAIL": "${localEnv:GIT_USER_EMAIL}",
+    "GIT_USER_NAME": "${localEnv:GIT_USER_NAME}",
+    "TZ": "${localEnv:TZ}"
+  },
+  "remoteUser": "node"
 }
