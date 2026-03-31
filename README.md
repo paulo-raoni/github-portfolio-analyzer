@@ -1,13 +1,52 @@
 # github-portfolio-analyzer
 
+[![npm version](https://img.shields.io/npm/v/github-portfolio-analyzer.svg)](https://www.npmjs.com/package/github-portfolio-analyzer)
+[![node](https://img.shields.io/node/v/github-portfolio-analyzer.svg)](https://nodejs.org)
+[![license](https://img.shields.io/npm/l/github-portfolio-analyzer.svg)](./LICENSE)
+[![npm downloads](https://img.shields.io/npm/dm/github-portfolio-analyzer.svg)](https://www.npmjs.com/package/github-portfolio-analyzer)
+
 Build a decision-ready developer portfolio from real GitHub repositories and planned ideas in one deterministic CLI workflow.
 This project turns raw repository metadata into actionable prioritization outputs for execution planning.
 
 ---
 **Tagline:** From repository inventory to execution decisions in minutes.
 
+```
+  ◉──●──●──●──◉
+         \    /
+          ◉──◉
+            ↓
+  now  ████ ↑↑↑
+  next ███░ ↑↑
+  later█░░░ ↑
+            ↓
+  ✓ report.json
+```
+
+**What this does:** you run one command. It reads all your GitHub repositories,
+scores and prioritizes them, and writes a structured JSON report ready to feed
+your portfolio site — automatically, without manual curation.
+
+## Flow Overview
+
+```mermaid
+flowchart TD
+  A[analyze] --> I[output/inventory.json]
+  A --> IC[output/inventory.csv]
+  B[ingest-ideas] --> IJ[output/ideas.json]
+  I --> C[build-portfolio]
+  IJ --> C
+  C --> P[output/portfolio.json]
+  D[report] --> R[output/portfolio-report.json]
+  D --> RM[output/portfolio-report.md]
+  D --> RT[output/portfolio-report.txt]
+  POL[priorities/policy.json] --> D
+  D -->|--format json --quiet| STDOUT[(stdout JSON)]
+```
+
 ## Table of Contents
 
+- [Flow Overview](#flow-overview)
 - [Why This Tool Exists](#why-this-tool-exists)
 - [Project Overview](#project-overview)
 - [Installation](#installation)
@@ -18,7 +57,6 @@ This project turns raw repository metadata into actionable prioritization output
 - [Output Artifacts](#output-artifacts)
 - [End-to-End Example](#end-to-end-example)
 - [Machine Integration](#machine-integration)
-- [Flow Overview](#flow-overview)
 - [3-Minute Quickstart](#3-minute-quickstart)
 - [End-to-End Tutorial](#end-to-end-tutorial)
 - [Command Reference](#command-reference)
@@ -178,23 +216,6 @@ github-portfolio-analyzer report --output ./runs/run-001
 
 `--format json --quiet` is recommended for machine consumers because stdout contains only JSON unless an error occurs.
 See [Integration Contract](#integration-contract) and the dedicated [Integration Guide](docs/INTEGRATION.md).
-
-## Flow Overview
-
-```mermaid
-flowchart TD
-  A[analyze] --> I[output/inventory.json]
-  A --> IC[output/inventory.csv]
-  B[ingest-ideas] --> IJ[output/ideas.json]
-  I --> C[build-portfolio]
-  IJ --> C
-  C --> P[output/portfolio.json]
-  D[report] --> R[output/portfolio-report.json]
-  D --> RM[output/portfolio-report.md]
-  D --> RT[output/portfolio-report.txt]
-  POL[priorities/policy.json (optional)] --> D
-  D -->|--format json --quiet| STDOUT[(stdout JSON)]
-```
 
 ## 3-Minute Quickstart
 
