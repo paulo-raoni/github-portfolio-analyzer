@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+- Colored terminal output — progress, success, warning, and error states with ANSI colors
+- Terminal header with ASCII art, version info, user, token status, and policy status
+- Per-repository progress logging during `analyze` (Analyzing N/total: repo-name)
+- Elapsed time in analyze completion summary
+- Fallback count in analyze summary when structural inspection fails
+- Fatal error messages for missing token, auth failure, and rate limit
+
 ## [1.0.0] — 2026-03-31
 
 ### Added

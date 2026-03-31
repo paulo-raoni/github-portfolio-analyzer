@@ -4,6 +4,8 @@ import { loadPresentationOverrides, applyPresentationOverrides } from '../core/p
 import { readJsonFile, readJsonFileIfExists } from '../io/files.js';
 import { writeReportAscii, writeReportJson, writeReportMarkdown } from '../io/report.js';
 import { UsageError } from '../errors.js';
+import { printHeader } from '../utils/header.js';
+import { success } from '../utils/output.js';
 
 const ALLOWED_FORMATS = new Set(['ascii', 'md', 'json', 'all']);
 
@@ -14,6 +16,15 @@ export async function runReportCommand(options = {}) {
   const policyPath = resolvePolicyPath(options);
   const explain = options.explain === true;
   const quiet = options.quiet === true || options.quiet === 'true';
+
+  if (!quiet) {
+    printHeader({
+      command: 'report',
+      outputDir,
+      hasToken: false,
+      hasPolicy: Boolean(policyPath),
+    });
+  }
 
   if (!ALLOWED_FORMATS.has(formatOption)) {
     throw new UsageError('Invalid --format value. Allowed values: ascii|md|json|all');
@@ -55,10 +66,9 @@ export async function runReportCommand(options = {}) {
   }
 
   if (!quiet) {
-    const log = formatOption === 'json' ? console.error : console.log;
-    log(`Generated portfolio decision report for ${reportModel.meta.counts.total} items.`);
+    success(`✓ Generated portfolio decision report for ${reportModel.meta.counts.total} items`);
     for (const filePath of writtenPaths) {
-      log(`Wrote ${filePath}.`);
+      success(`✓ Wrote ${filePath}`);
     }
   }
 
