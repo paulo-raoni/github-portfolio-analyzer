@@ -1,7 +1,8 @@
 import { buildPortfolio } from '../core/portfolio.js';
+import { info, success } from '../utils/output.js';
 
 export async function runBuildPortfolioCommand(options = {}) {
+  info('Building portfolio...');
   const result = await buildPortfolio(options);
-  console.log(`Built portfolio with ${result.count} items.`);
-  console.log(`Wrote ${result.portfolioPath}.`);
+  success(`✓ Built portfolio — ${result.count} items → ${result.portfolioPath}`);
 }

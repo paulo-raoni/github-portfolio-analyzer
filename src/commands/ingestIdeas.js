@@ -1,7 +1,8 @@
 import { ingestIdeas } from '../core/ideas.js';
+import { info, success } from '../utils/output.js';
 
 export async function runIngestIdeasCommand(options = {}) {
+  info('Ingesting ideas...');
   const result = await ingestIdeas(options);
-  console.log(`Ingested ${result.count} ideas.`);
-  console.log(`Wrote ${result.outputPath}.`);
+  success(`✓ Ingested ${result.count} ideas → ${result.outputPath}`);
 }
