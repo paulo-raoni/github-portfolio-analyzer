@@ -15,6 +15,18 @@
     "lint": "eslint .",
     "test": "node --test"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/paulo-raoni/github-portfolio-analyzer.git"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "schemas/",
+    "analyzer.manifest.json",
+    "README.md",
+    "CHANGELOG.md"
+  ],
   "engines": {
     "node": ">=22"
   },
