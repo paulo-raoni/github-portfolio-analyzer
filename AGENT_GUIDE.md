@@ -45,3 +45,19 @@ github-portfolio-analyzer report --output ./runs/run-001
   - `0` success
   - `1` operational failure
   - `2` invalid usage
+
+## Scoring v2 — category-aware weights
+
+A partir da v1.1.0, o score de repositórios é calculado com pesos diferentes por categoria.
+
+**Categorias disponíveis:**
+`product | tooling | library | content | learning | infra | experiment | template`
+
+A categoria é inferida automaticamente por `inferRepoCategory()` em `taxonomy.js` a partir de nome, descrição e topics do repo. Para ideias, vem do campo `category` do input.
+
+**Impacto na interpretação:**
+- Um `content` repo sem license e sem tests não está errado — license/tests têm peso 0 para essa categoria
+- Um `experiment` tem baseline=45, então mesmo sem atividade recente não vai para `park` automaticamente
+- Um `library` sem license é genuinamente problemático — peso 20, o mais alto entre as categorias
+
+Ver `docs/SCORING_MODEL.md` para tabela completa de pesos e exemplos numéricos.

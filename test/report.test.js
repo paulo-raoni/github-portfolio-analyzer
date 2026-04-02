@@ -8,6 +8,7 @@ import {
   computeCompletionLevel,
   computePriorityBand
 } from '../src/core/report.js';
+import { renderReportAscii, renderReportMarkdown } from '../src/io/report.js';
 import { runReportCommand } from '../src/commands/report.js';
 import { readJsonFile, fileExists } from '../src/io/files.js';
 import { loadPresentationOverrides, applyPresentationOverrides } from '../src/core/presentationOverrides.js';
@@ -661,6 +662,7 @@ test('buildReportModel preserves presentation fields from portfolio items', () =
         topics: ['cli', 'node'],
         htmlUrl: 'https://github.com/owner/my-tool',
         homepage: 'https://my-tool.dev',
+        category: 'tooling',
         taxonomyMeta: { sources: { effort: 'user' } },
         structuralHealth: { hasReadme: true, hasPackageJson: true, hasCi: true, hasTests: true },
         sizeKb: 300,
@@ -674,6 +676,7 @@ test('buildReportModel preserves presentation fields from portfolio items', () =
   assert.deepEqual(item.topics, ['cli', 'node']);
   assert.equal(item.htmlUrl, 'https://github.com/owner/my-tool');
   assert.equal(item.homepage, 'https://my-tool.dev');
+  assert.equal(item.category, 'tooling');
 });
 
 test('buildReportModel omits presentation fields when absent', () => {
@@ -701,6 +704,7 @@ test('buildReportModel omits presentation fields when absent', () => {
   assert.equal(Object.hasOwn(item, 'topics'), false);
   assert.equal(Object.hasOwn(item, 'htmlUrl'), false);
   assert.equal(Object.hasOwn(item, 'homepage'), false);
+  assert.equal(Object.hasOwn(item, 'category'), false);
 });
 
 test('applyPresentationOverrides sets presentationState on matching items', () => {
@@ -801,4 +805,159 @@ test('report command fails with clear error when policy file is missing', async 
     () => runReportCommand({ 'output-dir': outputDir, policy: path.join(workspace, 'missing-policy.json') }),
     /Policy file not found/
   );
+});
+
+test('category propagates to summary items (top10ByScore, now, next, later, park)', () => {
+  const makeItem = (slug, score, state, band, category) => ({
+    slug,
+    type: 'repo',
+    title: slug,
+    score,
+    state,
+    effort: 'm',
+    value: 'medium',
+    completionLevel: 2,
+    completionLabel: 'Structured baseline',
+    effortEstimate: 'm',
+    basePriorityScore: score,
+    finalPriorityScore: score,
+    priorityBand: band,
+    priorityOverrides: [],
+    priorityWhy: [`Base score: ${score}`],
+    nextAction: 'Ship improvement — Done when: PR merged.',
+    category,
+    structuralHealth: {
+      hasReadme: true,
+      hasPackageJson: true,
+      hasCi: false,
+      hasTests: false
+    },
+    sizeKb: 250,
+    language: 'TypeScript'
+  });
+
+  const portfolio = {
+    meta: { asOfDate: null },
+    items: [
+      makeItem('content-repo', 90, 'active', 'now', 'content'),
+      makeItem('library-repo', 55, 'active', 'next', 'library'),
+      makeItem('infra-repo', 40, 'stale', 'later', 'infra'),
+      makeItem('old-repo', 20, 'abandoned', 'park', 'experiment')
+    ]
+  };
+
+  const report = buildReportModel(portfolio);
+
+  // items[]
+  assert.equal(report.items.find((item) => item.slug === 'content-repo')?.category, 'content');
+  assert.equal(report.items.find((item) => item.slug === 'library-repo')?.category, 'library');
+
+  // top10ByScore
+  assert.equal(report.summary.top10ByScore.find((item) => item.slug === 'content-repo')?.category, 'content');
+
+  // summary.now
+  const nowItem = report.summary.now.find((item) => item.slug === 'content-repo');
+  assert.ok(nowItem, 'content-repo should appear in summary.now');
+  assert.equal(nowItem?.category, 'content');
+
+  // summary.next
+  const nextItem = report.summary.next.find((item) => item.slug === 'library-repo');
+  assert.ok(nextItem, 'library-repo should appear in summary.next');
+  assert.equal(nextItem?.category, 'library');
+
+  // summary.later
+  const laterItem = report.summary.later.find((item) => item.slug === 'infra-repo');
+  assert.ok(laterItem, 'infra-repo should appear in summary.later');
+  assert.equal(laterItem?.category, 'infra');
+
+  // summary.park
+  const parkItem = report.summary.park.find((item) => item.slug === 'old-repo');
+  assert.ok(parkItem, 'old-repo should appear in summary.park');
+  assert.equal(parkItem?.category, 'experiment');
+});
+
+test('band renderers show category when present and omit it when absent', () => {
+  const portfolio = {
+    meta: { asOfDate: null },
+    items: [
+      {
+        slug: 'content-repo',
+        type: 'repo',
+        title: 'content-repo',
+        score: 90,
+        state: 'active',
+        effort: 'm',
+        value: 'medium',
+        nextAction: 'Ship improvement — Done when: PR merged.',
+        category: 'content',
+        structuralHealth: {
+          hasReadme: true,
+          hasPackageJson: true,
+          hasCi: false,
+          hasTests: false
+        },
+        sizeKb: 250,
+        language: 'TypeScript'
+      },
+      {
+        slug: 'no-category-repo',
+        type: 'repo',
+        title: 'no-category-repo',
+        score: 55,
+        state: 'active',
+        effort: 'm',
+        value: 'medium',
+        nextAction: 'Refresh docs — Done when: README validated.',
+        structuralHealth: {
+          hasReadme: true,
+          hasPackageJson: true,
+          hasCi: false,
+          hasTests: false
+        },
+        sizeKb: 250,
+        language: 'TypeScript'
+      }
+    ]
+  };
+
+  const report = buildReportModel(portfolio, null, { generatedAt: '2026-03-03T00:00:00.000Z' });
+  const ascii = renderReportAscii(report);
+  const markdown = renderReportMarkdown(report);
+
+  assert.match(ascii, /1\) \[content\] content-repo — Score 90 — CL2 — Effort m — State active/);
+  assert.match(ascii, /1\) no-category-repo — Score 55 — CL2 — Effort m — State active/);
+  assert.doesNotMatch(ascii, /\[(?:undefined|null)\]/);
+
+  assert.match(markdown, /1\. `content` \*\*content-repo\*\* — Score 90 — CL2 — Effort m — State active/);
+  assert.match(markdown, /1\. \*\*no-category-repo\*\* — Score 55 — CL2 — Effort m — State active/);
+  assert.doesNotMatch(markdown, /`(?:undefined|null)`/);
+});
+
+test('toSummaryItem omits category when absent from item', () => {
+  const portfolio = {
+    meta: { asOfDate: null },
+    items: [{
+      slug: 'no-category-repo',
+      type: 'repo',
+      title: 'No Category',
+      score: 60,
+      state: 'stale',
+      effort: 'm',
+      value: 'medium',
+      completionLevel: 1,
+      completionLabel: 'Documented',
+      effortEstimate: 'm',
+      basePriorityScore: 60,
+      finalPriorityScore: 60,
+      priorityBand: 'later',
+      priorityOverrides: [],
+      priorityWhy: ['Base score: 60'],
+      nextAction: 'Refresh docs — Done when: README validated.'
+    }]
+  };
+
+  const report = buildReportModel(portfolio);
+  const summaryItem = report.summary.top10ByScore.find((item) => item.slug === 'no-category-repo');
+  assert.ok(summaryItem, 'item should appear in summary');
+  assert.equal(Object.hasOwn(summaryItem, 'category'), false);
 });

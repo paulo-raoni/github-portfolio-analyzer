@@ -176,7 +176,11 @@
           "type": "array",
           "items": { "type": "string" }
         },
-        "nextAction": { "type": "string" }
+        "nextAction": { "type": "string" },
+        "category": {
+          "type": "string",
+          "enum": ["product", "tooling", "library", "learning", "content", "infra", "experiment", "template"]
+        }
       }
     },
     "item": {
@@ -244,6 +248,10 @@
         },
         "htmlUrl": { "type": "string" },
         "homepage": { "type": "string" },
+        "category": {
+          "type": "string",
+          "enum": ["product", "tooling", "library", "learning", "content", "infra", "experiment", "template"]
+        },
         "presentationState": {
           "type": "string",
           "enum": ["featured", "complete", "in-progress", "salvageable", "learning", "archived", "hidden"]

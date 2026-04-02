@@ -23,6 +23,7 @@ test('maturity classification boundaries are stable', () => {
 
 test('repository score follows heuristic and clamps to 0..100', () => {
   const repo = {
+    category: 'tooling',
     pushedAt: '2026-02-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
     stargazersCount: 5,
@@ -36,6 +37,27 @@ test('repository score follows heuristic and clamps to 0..100', () => {
   const scored = scoreRepository(repo, '2026-03-03');
   assert.equal(scored.score, 100);
   assert.equal(scored.scoreBreakdown.hasReadme, 15);
+});
+
+test('repository score uses category-aware weights and baseline', () => {
+  const repo = {
+    category: 'content',
+    pushedAt: '2026-02-21T00:00:00.000Z',
+    updatedAt: '2026-02-28T00:00:00.000Z',
+    stargazersCount: 0,
+    structuralHealth: {
+      hasReadme: true,
+      hasLicense: false,
+      hasTests: false
+    }
+  };
+
+  const scored = scoreRepository(repo, '2026-03-03');
+  assert.equal(scored.score, 95);
+  assert.equal(scored.scoreBreakdown.baseline, 25);
+  assert.equal(scored.scoreBreakdown.hasLicense, 0);
+  assert.equal(scored.scoreBreakdown.hasTests, 0);
+  assert.equal(scored.scoreBreakdown.updatedWithin180Days, 30);
 });
 
 test('idea score follows heuristic and clamps to 0..100', () => {

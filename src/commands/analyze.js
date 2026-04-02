@@ -73,17 +73,22 @@ export async function runAnalyzeCommand(options = {}) {
       const structuralHealth = await inspectRepositoryStructure(github, normalized);
       const activity = classifyActivity(normalized._pushedAt, asOfDate);
       const maturity = classifyMaturity(normalized.sizeKb);
-      const { score, scoreBreakdown } = scoreRepository(
-        { ...normalized, structuralHealth, pushedAt: normalized._pushedAt, updatedAt: normalized._updatedAt },
-        asOfDate
-      );
       const taxonomy = buildRepoTaxonomy({
         ...normalized,
         structuralHealth,
         activity,
-        maturity,
-        score
+        maturity
       });
+      const { score, scoreBreakdown } = scoreRepository(
+        {
+          ...normalized,
+          structuralHealth,
+          pushedAt: normalized._pushedAt,
+          updatedAt: normalized._updatedAt,
+          category: taxonomy.category
+        },
+        asOfDate
+      );
 
       return stripInternalFields({
         ...normalized,
@@ -106,22 +111,22 @@ export async function runAnalyzeCommand(options = {}) {
         hasTests: false,
         hasCi: false
       };
+      const taxonomy = buildRepoTaxonomy({
+        ...normalized,
+        structuralHealth: fallbackStructuralHealth,
+        activity,
+        maturity
+      });
       const { score, scoreBreakdown } = scoreRepository(
         {
           ...normalized,
           structuralHealth: fallbackStructuralHealth,
           pushedAt: normalized._pushedAt,
-          updatedAt: normalized._updatedAt
+          updatedAt: normalized._updatedAt,
+          category: taxonomy.category
         },
         asOfDate
       );
-      const taxonomy = buildRepoTaxonomy({
-        ...normalized,
-        structuralHealth: fallbackStructuralHealth,
-        activity,
-        maturity,
-        score
-      });
 
       return stripInternalFields({
         ...normalized,

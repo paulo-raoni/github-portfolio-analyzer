@@ -98,14 +98,17 @@ Design goals:
 
 ## Installation
 
-Install dependencies and run the CLI locally:
+```bash
+npm install -g github-portfolio-analyzer
+```
+
+Verify the installation:
 
 ```bash
-npm install
 github-portfolio-analyzer --version
 ```
 
-If the global binary is not available yet, use:
+If the global binary is not available, run directly:
 
 ```bash
 node bin/github-portfolio-analyzer.js --version
@@ -497,7 +500,7 @@ Each `portfolio.json.items[]` entry includes:
 - `effort`: `xs | s | m | l | xl`
 - `value`: `low | medium | high | very-high`
 - `nextAction`: `"<Verb> <target> — Done when: <measurable condition>"`
-- `taxonomyMeta`: per-field provenance (`default | user | inferred`)
+- `taxonomyMeta`: per-field provenance (`default | user | inferred`). For repositories, `sources.category` is always `user` (when set manually) or `inferred` (heuristic) — never `default`.
 
 `inventory.json.items[]` includes the same taxonomy fields and `taxonomyMeta` for repositories.
 
@@ -508,50 +511,133 @@ Each `portfolio.json.items[]` entry includes:
 - `meta` (generatedAt, asOfDate, owner, counts)
 - `summary` (state counts, top10 by score, now/next/later/park)
 - `matrix.completionByEffort` (`CL0..CL5` by `xs..xl`)
-- `items[]` with decision fields (`completionLevel`, `effortEstimate`, `priorityBand`, `priorityWhy`)
+- `items[]` with decision fields (`completionLevel`, `effortEstimate`, `priorityBand`, `priorityWhy`, `category`)
 
 ## Decision Model (Report)
 
+Every repository passes through a deterministic scoring pipeline:
+
+```mermaid
+flowchart LR
+    subgraph top [ ]
+        direction LR
+        A([repo metadata]) --> B(inferRepoCategory) --> C([category]) --> D(scoreRepository) --> E([score 0–100])
+    end
+    subgraph mid [ ]
+        direction RL
+        J(computePriorityBand) <-- I([effort xs–xl]) <-- H(computeEffortEstimate) <-- G([CL 0–5]) <-- F(computeCompletionLevel)
+    end
+    E --> F
+    E -. feeds .-> J
+    G -. feeds .-> J
+    J --> park([park]) & later([later]) & next([next]) & now([now])
+```
+
+### Score
+
+Each repository receives a score from 0 to 100 based on observable signals.
+Signal weights depend on the project's **category**, inferred automatically
+from its name, description, and GitHub topics.
+
+| Signal | product | tooling | library | content | learning | infra | experiment | template |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| baseline | — | — | — | **25** | **35** | — | **45** | **30** |
+| pushed (90d) | 25 | 25 | 20 | 25 | 20 | 25 | 20 | 10 |
+| README | 15 | 15 | 20 | 15 | 15 | 20 | 15 | **25** |
+| license | 10 | 10 | **20** | ✗ | ✗ | 10 | ✗ | 10 |
+| tests | 25 | 20 | **25** | ✗ | ✗ | 10 | ✗ | 5 |
+| stars > 1 | 5 | 5 | 10 | 5 | 5 | 5 | 5 | 10 |
+| updated (180d) | 20 | 25 | 5 | **30** | **25** | **30** | 15 | 10 |
+
+`✗` = irrelevant for this category (weight 0). `library` penalizes missing
+license most heavily. `experiment` and `learning` skip tests and license entirely.
+
+Example — a `content` repo with no license and no tests still scores 95:
+
+```
+"prompt-library"  category: content
+────────────────────────────────────
+baseline          +25
+pushed 10d ago    +25
+has README        +15
+has license        +0  (irrelevant for content)
+has tests          +0  (irrelevant for content)
+updated this month +30
+────────────────────────────────────
+score              95
+```
+
+See [docs/SCORING_MODEL.md](docs/SCORING_MODEL.md) for the full weight table
+and numeric examples for every category.
+
 ### Completion Level
 
-- `CL0`: no README
-- `CL1`: has README
-- `CL2`: has package.json, or non-JS repo with size >= 500 KB
-- `CL3`: CL2 + CI
-- `CL4`: CL3 + tests
-- `CL5`: CL4 + score >= 70
-- Ideas default to `CL0`
+Reflects structural maturity, regardless of category. Ideas always default to CL 0.
+
+| CL | Label | Condition |
+|---|---|---|
+| 0 | Concept only | no README, or `type: idea` |
+| 1 | Documented | has README |
+| 2 | Structured baseline | has `package.json` (or non-JS repo ≥ 500 KB) |
+| 3 | Automated workflow | CL 2 + CI |
+| 4 | Tested workflow | CL 3 + tests |
+| 5 | Production-ready candidate | CL 4 + score ≥ 70 |
 
 ### Effort Estimate
 
-Uses taxonomy `effort` unless `effort` source is `default`.
-If defaulted, infer by size and completion:
+How much work remains to bring a project to its next meaningful state.
+Inferred automatically from repository size and completion level when not set manually.
+`effortEstimate` is a report-only field — it never overwrites the taxonomy `effort`.
 
-- `xs`: size < 100 KB and CL <= 2
-- `s`: size < 500 KB and CL <= 3
-- `m`: size < 5000 KB
-- `l`: size < 20000 KB
-- `xl`: size >= 20000 KB
-
-`effortEstimate` is a report field only; it does not overwrite taxonomy `effort`.
+| Estimate | Size | CL | What it means |
+|---|---|---|---|
+| `xs` | < 100 KB | ≤ 2 | A few hours. Easy to restart from scratch. |
+| `s` | < 500 KB | ≤ 3 | A day or two. Focused sprint. |
+| `m` | < 5 MB | any | About a week. Needs planning. |
+| `l` | < 20 MB | any | Multiple weeks. Real commitment required. |
+| `xl` | ≥ 20 MB | any | A long-term project. Strategic investment. |
 
 ### Priority Band
 
-Internal score calculation:
+The base score is adjusted by state, completion, and effort to produce a
+final `priorityScore`, which determines the band.
 
-- base: `score`
-- `+10` if state `active`
-- `+5` if state `stale`
-- `-20` if state `abandoned` or `archived`
-- `+10` if completion is CL1..CL3
-- `-10` if effortEstimate is `l` or `xl`
+| Modifier | Condition | Effect |
+|---|---|---|
+| State boost | `active` | +10 |
+| State boost | `stale` | +5 |
+| State penalty | `abandoned` or `archived` | −20 |
+| Quick-win boost | CL 1, 2, or 3 | +10 |
+| Effort penalty | `l` or `xl` | −10 |
 
-Band mapping:
+`priorityScore` has no lower bound — it can go negative.
 
-- `now`: >= 80
-- `next`: 65..79
-- `later`: 45..64
-- `park`: < 45
+| Band | Range | Meaning |
+|---|---|---|
+| `park` | < 45 | Needs a decision before any investment. Abandoned, low signal, or intentionally paused. |
+| `later` | 45–64 | Viable but not urgent. Can return when backlog has room. |
+| `next` | 65–79 | Strong candidate. High score but large effort, or active with average score. |
+| `now` | ≥ 80 | High confidence. Active project, good score, low effort — or manually pinned. |
+
+Example — modifiers can push a `park`-bound project below zero:
+
+```
+"old-monolith"  category: product
+──────────────────────────────────
+baseline         0
+pushed 400d ago +0   (> 90 days)
+has README      +15
+has license     +10
+no tests        +0
+updated 200d ago +0  (> 180 days)
+──────────────────────────────────
+score            25
+
+state=abandoned  −20
+effort=xl        −10
+──────────────────────────────────
+priorityScore    −5  → park
+```
 
 ## Determinism and Time Rules
 
@@ -654,10 +740,13 @@ npm test
 Coverage includes:
 
 - activity/maturity/scoring boundaries
+- category inference from repository name, description, and topics
+- category-aware scoring weights and category preservation for user-specified values
 - taxonomy presence and provenance behavior
 - `nextAction` validation and normalization
 - portfolio merge determinism
 - report completion logic, priority mapping, and deterministic model generation
+- `category` propagation to report items and all summary bands
 
 ## Troubleshooting
 
