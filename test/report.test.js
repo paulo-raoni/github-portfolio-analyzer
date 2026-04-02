@@ -661,6 +661,7 @@ test('buildReportModel preserves presentation fields from portfolio items', () =
         topics: ['cli', 'node'],
         htmlUrl: 'https://github.com/owner/my-tool',
         homepage: 'https://my-tool.dev',
+        category: 'tooling',
         taxonomyMeta: { sources: { effort: 'user' } },
         structuralHealth: { hasReadme: true, hasPackageJson: true, hasCi: true, hasTests: true },
         sizeKb: 300,
@@ -674,6 +675,7 @@ test('buildReportModel preserves presentation fields from portfolio items', () =
   assert.deepEqual(item.topics, ['cli', 'node']);
   assert.equal(item.htmlUrl, 'https://github.com/owner/my-tool');
   assert.equal(item.homepage, 'https://my-tool.dev');
+  assert.equal(item.category, 'tooling');
 });
 
 test('buildReportModel omits presentation fields when absent', () => {
@@ -701,6 +703,7 @@ test('buildReportModel omits presentation fields when absent', () => {
   assert.equal(Object.hasOwn(item, 'topics'), false);
   assert.equal(Object.hasOwn(item, 'htmlUrl'), false);
   assert.equal(Object.hasOwn(item, 'homepage'), false);
+  assert.equal(Object.hasOwn(item, 'category'), false);
 });
 
 test('applyPresentationOverrides sets presentationState on matching items', () => {

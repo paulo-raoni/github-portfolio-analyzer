@@ -3,10 +3,16 @@ import assert from 'node:assert/strict';
 import { buildRepoTaxonomy, buildIdeaTaxonomy } from '../src/core/taxonomy.js';
 
 test('buildRepoTaxonomy returns complete taxonomy contract', () => {
-  const taxonomy = buildRepoTaxonomy({ archived: false, activity: 'active' });
+  const taxonomy = buildRepoTaxonomy({
+    archived: false,
+    activity: 'active',
+    name: 'prompt-library',
+    description: 'Prompt snippets and docs for AI workflows',
+    topics: ['writing', 'resources']
+  });
 
   assert.equal(taxonomy.type, 'repo');
-  assert.ok(taxonomy.category);
+  assert.equal(taxonomy.category, 'content');
   assert.ok(taxonomy.state);
   assert.ok(taxonomy.strategy);
   assert.ok(taxonomy.effort);
@@ -14,6 +20,7 @@ test('buildRepoTaxonomy returns complete taxonomy contract', () => {
   assert.ok(taxonomy.nextAction.includes('— Done when:'));
   assert.equal(typeof taxonomy.taxonomyMeta.defaulted, 'boolean');
   assert.ok(taxonomy.taxonomyMeta.sources);
+  assert.equal(taxonomy.taxonomyMeta.sources.category, 'inferred');
 });
 
 test('buildIdeaTaxonomy maps status to state and preserves contract', () => {

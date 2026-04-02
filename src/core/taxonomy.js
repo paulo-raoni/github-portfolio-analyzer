@@ -1,17 +1,56 @@
 import { formatNextAction, normalizeNextAction } from '../utils/nextAction.js';
 
+function inferRepoCategory(repository) {
+  const name = String(repository.name ?? '').toLowerCase();
+  const desc = String(repository.description ?? '').toLowerCase();
+  const topics = Array.isArray(repository.topics)
+    ? repository.topics.map((topic) => String(topic).toLowerCase())
+    : [];
+  const all = [name, desc, ...topics].join(' ');
+
+  if (/\b(prompt|note|notes|snippet|snippets|cheatsheet|doc|docs|documentation|knowledge|wiki|resource|resources|writing|content|guide|guides|cookbook)\b/.test(all)) {
+    return 'content';
+  }
+
+  if (/\b(learn|learning|study|exercise|exercises|course|tutorial|tutorials|practice|training|bootcamp|challenge|challenges|kata)\b/.test(all)) {
+    return 'learning';
+  }
+
+  if (/\b(template|templates|boilerplate|starter|scaffold|skeleton|seed|base|init)\b/.test(all)) {
+    return 'template';
+  }
+
+  if (/\b(lib|library|sdk|package|npm|module|plugin|extension|addon|util|utils|helper|helpers)\b/.test(all)) {
+    return 'library';
+  }
+
+  if (/\b(infra|infrastructure|docker|kubernetes|k8s|ci|cd|pipeline|deploy|devops|ansible|terraform|nginx|proxy)\b/.test(all)) {
+    return 'infra';
+  }
+
+  if (/\b(poc|proof|experiment|spike|demo|prototype|sandbox|playground|try|trying)\b/.test(all)) {
+    return 'experiment';
+  }
+
+  if (/\b(app|application|system|platform|service|api|backend|frontend|web|mobile|dashboard|portal|saas)\b/.test(all)) {
+    return 'product';
+  }
+
+  return 'tooling';
+}
+
 export function buildRepoTaxonomy(repository) {
   const activityState = repository.activity;
   const state = repository.archived ? 'archived' : normalizeState(activityState, 'active');
 
-  const category = 'tooling';
+  const category = inferRepoCategory(repository);
   const strategy = 'maintenance';
   const effort = 'm';
   const value = 'medium';
   const nextAction = defaultRepoNextAction(state);
 
   const sources = {
-    category: 'default',
+    category: 'inferred',
     state: repository.archived ? 'inferred' : 'inferred',
     strategy: 'default',
     effort: 'default',
