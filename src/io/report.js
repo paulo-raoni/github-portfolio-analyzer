@@ -108,7 +108,8 @@ function renderAsciiBandSection(title, items) {
   }
 
   items.slice(0, 5).forEach((item, index) => {
-    lines.push(`${index + 1}) ${item.slug} — Score ${item.score} — CL${item.completionLevel} — Effort ${item.effortEstimate} — State ${item.state}`);
+    const categoryPrefix = item.category == null ? '' : `[${item.category}] `;
+    lines.push(`${index + 1}) ${categoryPrefix}${item.slug} — Score ${item.score} — CL${item.completionLevel} — Effort ${item.effortEstimate} — State ${item.state}`);
     lines.push(`   Why: ${item.priorityWhy?.join('; ') ?? ''}`);
     lines.push(`   Next: ${item.nextAction}`);
   });
@@ -129,7 +130,8 @@ function renderMarkdownBandSection(title, items) {
   }
 
   items.slice(0, 5).forEach((item, index) => {
-    lines.push(`${index + 1}. **${item.slug}** — Score ${item.score} — CL${item.completionLevel} — Effort ${item.effortEstimate} — State ${item.state}`);
+    const categoryPrefix = item.category == null ? '' : `\`${item.category}\` `;
+    lines.push(`${index + 1}. ${categoryPrefix}**${item.slug}** — Score ${item.score} — CL${item.completionLevel} — Effort ${item.effortEstimate} — State ${item.state}`);
     lines.push(`   - Why: ${item.priorityWhy?.join('; ') ?? ''}`);
     lines.push(`   - Next: ${item.nextAction}`);
   });
