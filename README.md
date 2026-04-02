@@ -98,14 +98,17 @@ Design goals:
 
 ## Installation
 
-Install dependencies and run the CLI locally:
+```bash
+npm install -g github-portfolio-analyzer
+```
+
+Verify the installation:
 
 ```bash
-npm install
 github-portfolio-analyzer --version
 ```
 
-If the global binary is not available yet, use:
+If the global binary is not available, run directly:
 
 ```bash
 node bin/github-portfolio-analyzer.js --version
@@ -497,7 +500,7 @@ Each `portfolio.json.items[]` entry includes:
 - `effort`: `xs | s | m | l | xl`
 - `value`: `low | medium | high | very-high`
 - `nextAction`: `"<Verb> <target> — Done when: <measurable condition>"`
-- `taxonomyMeta`: per-field provenance (`default | user | inferred`)
+- `taxonomyMeta`: per-field provenance (`default | user | inferred`). For repositories, `sources.category` is always `user` (when set manually) or `inferred` (heuristic) — never `default`.
 
 `inventory.json.items[]` includes the same taxonomy fields and `taxonomyMeta` for repositories.
 
@@ -508,7 +511,7 @@ Each `portfolio.json.items[]` entry includes:
 - `meta` (generatedAt, asOfDate, owner, counts)
 - `summary` (state counts, top10 by score, now/next/later/park)
 - `matrix.completionByEffort` (`CL0..CL5` by `xs..xl`)
-- `items[]` with decision fields (`completionLevel`, `effortEstimate`, `priorityBand`, `priorityWhy`)
+- `items[]` with decision fields (`completionLevel`, `effortEstimate`, `priorityBand`, `priorityWhy`, `category`)
 
 ## Decision Model (Report)
 
@@ -575,10 +578,10 @@ Reflects structural maturity, regardless of category. Ideas always default to CL
 |---|---|---|
 | 0 | Concept only | no README, or `type: idea` |
 | 1 | Documented | has README |
-| 2 | Structured | has `package.json` (or non-JS repo ≥ 500 KB) |
-| 3 | Automated | CL 2 + CI |
-| 4 | Tested | CL 3 + tests |
-| 5 | Production-ready | CL 4 + score ≥ 70 |
+| 2 | Structured baseline | has `package.json` (or non-JS repo ≥ 500 KB) |
+| 3 | Automated workflow | CL 2 + CI |
+| 4 | Tested workflow | CL 3 + tests |
+| 5 | Production-ready candidate | CL 4 + score ≥ 70 |
 
 ### Effort Estimate
 
@@ -737,10 +740,13 @@ npm test
 Coverage includes:
 
 - activity/maturity/scoring boundaries
+- category inference from repository name, description, and topics
+- category-aware scoring weights and category preservation for user-specified values
 - taxonomy presence and provenance behavior
 - `nextAction` validation and normalization
 - portfolio merge determinism
 - report completion logic, priority mapping, and deterministic model generation
+- `category` propagation to report items and all summary bands
 
 ## Troubleshooting
 
