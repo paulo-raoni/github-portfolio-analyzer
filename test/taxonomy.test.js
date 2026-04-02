@@ -34,3 +34,31 @@ test('buildIdeaTaxonomy maps status to state and preserves contract', () => {
   assert.ok(taxonomy.nextAction.includes('— Done when:'));
   assert.ok(taxonomy.taxonomyMeta.sources);
 });
+
+test('buildRepoTaxonomy preserves user-specified valid category over inference', () => {
+  const taxonomy = buildRepoTaxonomy({
+    archived: false,
+    activity: 'active',
+    name: 'my-app',
+    description: 'web platform',
+    topics: [],
+    category: 'library'
+  });
+
+  assert.equal(taxonomy.category, 'library');
+  assert.equal(taxonomy.taxonomyMeta.sources.category, 'user');
+});
+
+test('buildRepoTaxonomy ignores invalid user-specified category and falls back to inference', () => {
+  const taxonomy = buildRepoTaxonomy({
+    archived: false,
+    activity: 'active',
+    name: 'prompt-library',
+    description: '',
+    topics: [],
+    category: 'not-a-valid-category'
+  });
+
+  assert.equal(taxonomy.category, 'content');
+  assert.equal(taxonomy.taxonomyMeta.sources.category, 'inferred');
+});

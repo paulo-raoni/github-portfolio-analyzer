@@ -363,7 +363,8 @@ function toSummaryItem(item) {
     ...(item.priorityTag ? { priorityTag: item.priorityTag } : {}),
     priorityOverrides: item.priorityOverrides,
     priorityWhy: item.priorityWhy,
-    nextAction: item.nextAction
+    nextAction: item.nextAction,
+    ...(item.category != null ? { category: item.category } : {})
   };
 }
 

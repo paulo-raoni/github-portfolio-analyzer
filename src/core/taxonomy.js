@@ -43,14 +43,15 @@ export function buildRepoTaxonomy(repository) {
   const activityState = repository.activity;
   const state = repository.archived ? 'archived' : normalizeState(activityState, 'active');
 
-  const category = inferRepoCategory(repository);
+  const userCategory = normalizeCategory(repository.category);
+  const category = userCategory ?? inferRepoCategory(repository);
   const strategy = 'maintenance';
   const effort = 'm';
   const value = 'medium';
   const nextAction = defaultRepoNextAction(state);
 
   const sources = {
-    category: 'inferred',
+    category: userCategory ? 'user' : 'inferred',
     state: repository.archived ? 'inferred' : 'inferred',
     strategy: 'default',
     effort: 'default',

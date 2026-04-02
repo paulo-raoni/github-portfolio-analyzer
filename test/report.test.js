@@ -805,3 +805,72 @@ test('report command fails with clear error when policy file is missing', async 
     /Policy file not found/
   );
 });
+
+test('category propagates to summary items (top10ByScore, now, next, later, park)', () => {
+  const makeItem = (slug, score, state, band, category) => ({
+    slug,
+    type: 'repo',
+    title: slug,
+    score,
+    state,
+    effort: 'm',
+    value: 'medium',
+    completionLevel: 2,
+    completionLabel: 'Structured baseline',
+    effortEstimate: 'm',
+    basePriorityScore: score,
+    finalPriorityScore: score,
+    priorityBand: band,
+    priorityOverrides: [],
+    priorityWhy: [`Base score: ${score}`],
+    nextAction: 'Ship improvement — Done when: PR merged.',
+    category
+  });
+
+  const portfolio = {
+    meta: { asOfDate: null },
+    items: [
+      makeItem('content-repo', 90, 'active', 'now', 'content'),
+      makeItem('library-repo', 70, 'active', 'next', 'library')
+    ]
+  };
+
+  const report = buildReportModel(portfolio);
+
+  assert.equal(report.items.find((item) => item.slug === 'content-repo')?.category, 'content');
+  assert.equal(report.items.find((item) => item.slug === 'library-repo')?.category, 'library');
+  assert.equal(report.summary.top10ByScore.find((item) => item.slug === 'content-repo')?.category, 'content');
+
+  const nowItem = report.summary.now.find((item) => item.slug === 'content-repo');
+  assert.ok(nowItem, 'content-repo should appear in summary.now');
+  assert.equal(nowItem?.category, 'content');
+});
+
+test('toSummaryItem omits category when absent from item', () => {
+  const portfolio = {
+    meta: { asOfDate: null },
+    items: [{
+      slug: 'no-category-repo',
+      type: 'repo',
+      title: 'No Category',
+      score: 60,
+      state: 'stale',
+      effort: 'm',
+      value: 'medium',
+      completionLevel: 1,
+      completionLabel: 'Documented',
+      effortEstimate: 'm',
+      basePriorityScore: 60,
+      finalPriorityScore: 60,
+      priorityBand: 'later',
+      priorityOverrides: [],
+      priorityWhy: ['Base score: 60'],
+      nextAction: 'Refresh docs — Done when: README validated.'
+    }]
+  };
+
+  const report = buildReportModel(portfolio);
+  const summaryItem = report.summary.top10ByScore.find((item) => item.slug === 'no-category-repo');
+  assert.ok(summaryItem, 'item should appear in summary');
+  assert.equal(Object.hasOwn(summaryItem, 'category'), false);
+});
