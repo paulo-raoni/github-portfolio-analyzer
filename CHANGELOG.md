@@ -12,7 +12,7 @@ All notable changes to this project will be documented in this file.
 - Fallback count in analyze summary when structural inspection fails
 - Fatal error messages for missing token, auth failure, and rate limit
 
-## [1.1.0] — 2026-04-02
+## [1.2.0] — 2026-04-02
 
 ### Added
 - `inferRepoCategory()` em `taxonomy.js`: inferência de categoria por heurística de nome, descrição e topics — detecta content, learning, template, library, infra, experiment, product; fallback: tooling
