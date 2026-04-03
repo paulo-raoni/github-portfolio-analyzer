@@ -59,5 +59,6 @@ A categoria é inferida automaticamente por `inferRepoCategory()` em `taxonomy.j
 - Um `content` repo sem license e sem tests não está errado — license/tests têm peso 0 para essa categoria
 - Um `experiment` tem baseline=45, então mesmo sem atividade recente não vai para `park` automaticamente
 - Um `library` sem license é genuinamente problemático — peso 20, o mais alto entre as categorias
+- A classificação automática de atividade para repositórios usa `active`, `stale` e `dormant`; `abandoned` permanece apenas como compatibilidade para curadoria manual
 
 Ver `docs/SCORING_MODEL.md` para tabela completa de pesos e exemplos numéricos.

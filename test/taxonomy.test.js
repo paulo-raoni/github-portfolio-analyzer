@@ -62,3 +62,67 @@ test('buildRepoTaxonomy ignores invalid user-specified category and falls back t
   assert.equal(taxonomy.category, 'content');
   assert.equal(taxonomy.taxonomyMeta.sources.category, 'inferred');
 });
+
+test('inferRepoCategory: experiment takes priority over library when name has poc', () => {
+  const taxonomy = buildRepoTaxonomy({
+    archived: false,
+    activity: 'active',
+    name: 'using-sequelize-poc',
+    description: 'Utilization of sequelize-poc as a library',
+    topics: []
+  });
+
+  assert.equal(taxonomy.category, 'experiment');
+});
+
+test('inferRepoCategory: clock/calculator/game repos → product', () => {
+  for (const name of ['pomodoro-clock', 'simple-calculator', 'tic-tac-toe-game', 'wikipedia-viewer']) {
+    const taxonomy = buildRepoTaxonomy({
+      archived: false,
+      activity: 'active',
+      name,
+      description: '',
+      topics: []
+    });
+
+    assert.equal(taxonomy.category, 'product', `${name} should be product`);
+  }
+});
+
+test('inferRepoCategory: classes/introduction/material → learning', () => {
+  for (const name of [
+    'open-enrollment-classes-introduction-to-github',
+    'python-essencial-material',
+    'intro-to-algorithms'
+  ]) {
+    const taxonomy = buildRepoTaxonomy({
+      archived: false,
+      activity: 'active',
+      name,
+      description: '',
+      topics: []
+    });
+
+    assert.equal(taxonomy.category, 'learning', `${name} should be learning`);
+  }
+});
+
+test('dormant state maps to correct next action', () => {
+  const taxonomy = buildRepoTaxonomy({
+    archived: false,
+    activity: 'dormant'
+  });
+
+  assert.equal(taxonomy.state, 'dormant');
+  assert.ok(taxonomy.nextAction.includes('Done when:'));
+});
+
+test('manual abandoned state remains supported for curated items', () => {
+  const taxonomy = buildRepoTaxonomy({
+    archived: false,
+    activity: 'abandoned'
+  });
+
+  assert.equal(taxonomy.state, 'abandoned');
+  assert.ok(taxonomy.nextAction.includes('Done when:'));
+});

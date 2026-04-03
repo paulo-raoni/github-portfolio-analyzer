@@ -97,7 +97,7 @@ relative to its category.
     priorityScore = score
       + 10  (state=active)
       + 5   (state=stale)
-      - 20  (state=abandoned/archived)
+      - 20  (state=dormant/abandoned/archived)
       + 10  (CL 1–3, quick-win zone)
       - 10  (effort=l ou xl)
 

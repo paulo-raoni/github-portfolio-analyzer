@@ -109,7 +109,7 @@ function renderPortfolioSummary(payload) {
 
   lines.push('');
 
-  for (const state of ['active', 'stale', 'abandoned', 'idea']) {
+  for (const state of ['active', 'stale', 'dormant', 'abandoned', 'idea']) {
     lines.push(`## State: ${state}`);
     lines.push('');
 

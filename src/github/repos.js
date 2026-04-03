@@ -1,17 +1,24 @@
+import { daysSince } from '../core/classification.js';
+
 const PAGE_SIZE = 100;
 
 /**
  * Classifies a fork as active or passive.
- * Active forks have commits ahead of the upstream default branch.
+ * Active forks are either ahead of the upstream default branch or recently active
+ * when upstream comparison metadata is unavailable.
  */
-export async function classifyFork(client, repo) {
+export async function classifyFork(client, repo, asOfDate = new Date().toISOString().slice(0, 10)) {
   if (!repo?.fork) {
     return null;
   }
 
   const parent = repo.parent;
+  const pushedAt = repo._pushedAt ?? repo.pushed_at ?? repo.pushedAt ?? null;
+  const isRecentlyActive = pushedAt ? daysSince(pushedAt, asOfDate) <= 90 : false;
+  const fallbackForkType = isRecentlyActive ? 'active' : 'passive';
+
   if (!parent) {
-    return 'passive';
+    return fallbackForkType;
   }
 
   const ownerLogin = repo.owner?.login ?? repo.ownerLogin;
@@ -20,7 +27,7 @@ export async function classifyFork(client, repo) {
   const branch = repo.default_branch ?? repo.defaultBranch ?? 'main';
 
   if (!ownerLogin || !parentOwner || !repo.name) {
-    return 'passive';
+    return fallbackForkType;
   }
 
   try {
@@ -30,11 +37,11 @@ export async function classifyFork(client, repo) {
 
     return (comparison?.ahead_by ?? 0) > 0 ? 'active' : 'passive';
   } catch {
-    return 'passive';
+    return fallbackForkType;
   }
 }
 
-export async function fetchAllRepositories(client) {
+export async function fetchAllRepositories(client, asOfDate = new Date().toISOString().slice(0, 10)) {
   const repositories = [];
 
   for (let page = 1; ; page += 1) {
@@ -66,7 +73,7 @@ export async function fetchAllRepositories(client) {
     const batch = forks.slice(index, index + 5);
     await Promise.all(
       batch.map(async (repository) => {
-        repository.forkType = await classifyFork(client, repository);
+        repository.forkType = await classifyFork(client, repository, asOfDate);
       })
     );
   }

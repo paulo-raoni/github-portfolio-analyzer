@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.4.0] — 2026-04-03
+
+### Added
+- Smoke tests for `--version` and `--help`
+- Analyze command integration coverage for env-token execution and generated inventory fields
+- `dormant` state in report summaries and documentation, while preserving manual `abandoned` compatibility
+
+### Changed
+- Automatic inactivity classification now returns `dormant` instead of `abandoned`
+- Repository taxonomy inference now prioritizes `experiment` before `library`, broadens `learning` signals, and classifies simple apps like clocks/calculators/games as `product`
+- Fork fallback classification now uses recent fork activity when upstream compare metadata is unavailable
+
 ## [1.3.0] — 2026-04-03
 
 ### Added

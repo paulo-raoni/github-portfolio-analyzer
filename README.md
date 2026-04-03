@@ -495,7 +495,8 @@ Each `portfolio.json.items[]` entry includes:
 
 - `type`: `repo | idea`
 - `category`: `product | tooling | library | learning | content | infra | experiment | template`
-- `state`: `idea | active | stale | abandoned | archived | reference-only`
+- `state`: `idea | active | stale | dormant | abandoned | archived | reference-only`
+- Auto-classified repository inactivity uses `dormant`; `abandoned` remains supported for manual curation.
 - `strategy`: `strategic-core | strategic-support | opportunistic | maintenance | parked`
 - `effort`: `xs | s | m | l | xl`
 - `value`: `low | medium | high | very-high`
@@ -606,7 +607,7 @@ final `priorityScore`, which determines the band.
 |---|---|---|
 | State boost | `active` | +10 |
 | State boost | `stale` | +5 |
-| State penalty | `abandoned` or `archived` | −20 |
+| State penalty | `dormant`, `abandoned`, or `archived` | −20 |
 | Quick-win boost | CL 1, 2, or 3 | +10 |
 | Effort penalty | `l` or `xl` | −10 |
 
@@ -614,7 +615,7 @@ final `priorityScore`, which determines the band.
 
 | Band | Range | Meaning |
 |---|---|---|
-| `park` | < 45 | Needs a decision before any investment. Abandoned, low signal, or intentionally paused. |
+| `park` | < 45 | Needs a decision before any investment. Dormant, low signal, or intentionally paused. |
 | `later` | 45–64 | Viable but not urgent. Can return when backlog has room. |
 | `next` | 65–79 | Strong candidate. High score but large effort, or active with average score. |
 | `now` | ≥ 80 | High confidence. Active project, good score, low effort — or manually pinned. |
@@ -633,7 +634,7 @@ updated 200d ago +0  (> 180 days)
 ──────────────────────────────────
 score            25
 
-state=abandoned  −20
+state=dormant    −20
 effort=xl        −10
 ──────────────────────────────────
 priorityScore    −5  → park

@@ -51,10 +51,11 @@
         "byState": {
           "type": "object",
           "additionalProperties": true,
-          "required": ["active", "stale", "abandoned", "archived", "idea", "reference-only"],
+          "required": ["active", "stale", "dormant", "abandoned", "archived", "idea", "reference-only"],
           "properties": {
             "active": { "type": "number" },
             "stale": { "type": "number" },
+            "dormant": { "type": "number" },
             "abandoned": { "type": "number" },
             "archived": { "type": "number" },
             "idea": { "type": "number" },

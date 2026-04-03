@@ -60,7 +60,7 @@ export async function runAnalyzeCommand(options = {}) {
 
   let repositories;
   try {
-    repositories = await fetchAllRepositories(github);
+    repositories = await fetchAllRepositories(github, asOfDate);
   } catch (err) {
     if (err && (err.status === 401 || err.status === 403)) {
       fatal('GitHub authentication failed — check your GITHUB_TOKEN permissions');

@@ -1,6 +1,6 @@
 import { utcNowISOString } from '../utils/time.js';
 
-const STATE_ORDER = ['active', 'stale', 'abandoned', 'archived', 'idea', 'reference-only'];
+const STATE_ORDER = ['active', 'stale', 'dormant', 'abandoned', 'archived', 'idea', 'reference-only'];
 const EFFORT_ORDER = ['xs', 's', 'm', 'l', 'xl'];
 const BAND_STRENGTH = {
   park: 0,
@@ -109,9 +109,9 @@ export function computePriorityBand(input) {
   } else if (state === 'stale') {
     priorityScore += 5;
     reasons.push('State boost: stale (+5)');
-  } else if (state === 'abandoned' || state === 'archived') {
+  } else if (state === 'dormant' || state === 'abandoned' || state === 'archived') {
     priorityScore -= 20;
-    reasons.push('State penalty: abandoned/archived (-20)');
+    reasons.push('State penalty: dormant/abandoned/archived (-20)');
   }
 
   if (completionLevel >= 1 && completionLevel <= 3) {
@@ -309,6 +309,7 @@ function buildByStateSummary(reportItems) {
   const summary = {
     active: 0,
     stale: 0,
+    dormant: 0,
     abandoned: 0,
     archived: 0,
     idea: 0,

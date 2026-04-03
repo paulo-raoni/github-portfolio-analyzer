@@ -11,7 +11,7 @@ export function classifyActivity(pushedAt, asOfDate) {
     return 'stale';
   }
 
-  return 'abandoned';
+  return 'dormant';
 }
 
 export function classifyMaturity(sizeKb) {

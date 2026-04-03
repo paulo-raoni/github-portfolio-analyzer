@@ -88,6 +88,47 @@ test('computePriorityBand maps scores into now/next/later/park', () => {
   assert.equal(park.priorityBand, 'park');
 });
 
+test('buildReportModel counts dormant and abandoned states separately', () => {
+  const report = buildReportModel({
+    meta: { asOfDate: '2026-04-03' },
+    items: [
+      {
+        slug: 'sleeping-repo',
+        type: 'repo',
+        title: 'Sleeping Repo',
+        score: 45,
+        state: 'dormant',
+        effort: 'm',
+        value: 'medium',
+        taxonomyMeta: { sources: { effort: 'user' } },
+        structuralHealth: {
+          hasReadme: true,
+          hasPackageJson: false,
+          hasCi: false,
+          hasTests: false
+        },
+        sizeKb: 120,
+        language: 'JavaScript',
+        nextAction: 'Decide next step — Done when: status is documented.'
+      },
+      {
+        slug: 'curated-abandoned',
+        type: 'idea',
+        title: 'Curated Abandoned',
+        score: 10,
+        state: 'abandoned',
+        effort: 's',
+        value: 'low',
+        taxonomyMeta: { sources: { effort: 'user' } },
+        nextAction: 'Decide archive plan — Done when: rationale is recorded.'
+      }
+    ]
+  });
+
+  assert.equal(report.summary.byState.dormant, 1);
+  assert.equal(report.summary.byState.abandoned, 1);
+});
+
 test('buildReportModel is deterministic when ignoring generatedAt', () => {
   const portfolio = {
     meta: {
