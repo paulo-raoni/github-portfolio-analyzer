@@ -89,6 +89,16 @@ test('resolveAsOfDate: undefined returns today UTC', () => {
   assert.match(resolveAsOfDate(undefined), /^\d{4}-\d{2}-\d{2}$/);
 });
 
-test('resolveAsOfDate: invalid string falls back to today', () => {
-  assert.match(resolveAsOfDate('not-a-date'), /^\d{4}-\d{2}-\d{2}$/);
+test('resolveAsOfDate: invalid string throws', () => {
+  assert.throws(
+    () => resolveAsOfDate('not-a-date'),
+    /Invalid --as-of value/
+  );
+});
+
+test('resolveAsOfDate: calendar overflow throws', () => {
+  assert.throws(
+    () => resolveAsOfDate('2026-02-31'),
+    /Invalid --as-of value/
+  );
 });
