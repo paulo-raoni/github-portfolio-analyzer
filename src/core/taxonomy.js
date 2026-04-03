@@ -6,18 +6,23 @@ function inferRepoCategory(repository) {
   const topics = Array.isArray(repository.topics)
     ? repository.topics.map((topic) => String(topic).toLowerCase())
     : [];
+  const nameAndTopics = [name, ...topics].join(' ');
   const all = [name, desc, ...topics].join(' ');
 
   if (/\b(prompt|note|notes|snippet|snippets|cheatsheet|doc|docs|documentation|knowledge|wiki|resource|resources|writing|content|guide|guides|cookbook)\b/.test(all)) {
     return 'content';
   }
 
-  if (/\b(learn|learning|study|exercise|exercises|course|tutorial|tutorials|practice|training|bootcamp|challenge|challenges|kata)\b/.test(all)) {
+  if (/\b(learn|learning|study|exercise|exercises|course|tutorial|tutorials|practice|training|bootcamp|challenge|challenges|kata|curriculum|syllabus)\b/.test(all)) {
     return 'learning';
   }
 
   if (/\b(template|templates|boilerplate|starter|scaffold|skeleton|seed|base|init)\b/.test(all)) {
     return 'template';
+  }
+
+  if (/\b(poc|proof|experiment|spike|prototype|sandbox|playground)\b/.test(nameAndTopics)) {
+    return 'experiment';
   }
 
   if (/\b(lib|library|sdk|package|npm|module|plugin|extension|addon|util|utils|helper|helpers)\b/.test(all)) {
@@ -28,11 +33,11 @@ function inferRepoCategory(repository) {
     return 'infra';
   }
 
-  if (/\b(poc|proof|experiment|spike|demo|prototype|sandbox|playground|try|trying)\b/.test(all)) {
+  if (/\b(demo|try|trying)\b/.test(all)) {
     return 'experiment';
   }
 
-  if (/\b(app|application|system|platform|service|api|backend|frontend|web|mobile|dashboard|portal|saas)\b/.test(all)) {
+  if (/\b(app|application|system|platform|service|api|backend|frontend|web|mobile|dashboard|portal|saas|clock|calculator|game|games|viewer|weather|timer|todo|player|tracker)\b/.test(all)) {
     return 'product';
   }
 
@@ -130,6 +135,10 @@ export function mapIdeaStatusToState(status) {
     return 'stale';
   }
 
+  if (value === 'dormant') {
+    return 'dormant';
+  }
+
   if (value === 'abandoned' || value === 'dropped') {
     return 'abandoned';
   }
@@ -154,7 +163,7 @@ function defaultRepoNextAction(state) {
     return formatNextAction('Refresh', 'execution documentation', 'README run steps are validated in a clean environment');
   }
 
-  if (state === 'abandoned') {
+  if (state === 'dormant' || state === 'abandoned') {
     return formatNextAction('Decide', 'retain or archive status', 'README contains a documented decision and rationale');
   }
 
@@ -170,7 +179,7 @@ function normalizeCategory(value) {
 }
 
 function normalizeState(value, fallback) {
-  return normalizeEnum(value, ['idea', 'active', 'stale', 'abandoned', 'archived', 'reference-only']) ?? fallback;
+  return normalizeEnum(value, ['idea', 'active', 'stale', 'dormant', 'abandoned', 'archived', 'reference-only']) ?? fallback;
 }
 
 function normalizeStrategy(value) {

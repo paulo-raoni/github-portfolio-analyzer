@@ -9,7 +9,7 @@ test('activity classification boundaries are stable', () => {
   assert.equal(classifyActivity('2025-12-03T00:00:00.000Z', asOf), 'active');
   assert.equal(classifyActivity('2025-12-02T00:00:00.000Z', asOf), 'stale');
   assert.equal(classifyActivity('2025-03-03T00:00:00.000Z', asOf), 'stale');
-  assert.equal(classifyActivity('2025-03-02T00:00:00.000Z', asOf), 'abandoned');
+  assert.equal(classifyActivity('2025-03-02T00:00:00.000Z', asOf), 'dormant');
 });
 
 test('maturity classification boundaries are stable', () => {
@@ -69,4 +69,19 @@ test('idea score follows heuristic and clamps to 0..100', () => {
   });
 
   assert.equal(scored.score, 100);
+});
+
+test('classifyActivity returns dormant (not abandoned) for repos inactive over 365 days', () => {
+  const asOf = '2026-04-03';
+
+  assert.equal(classifyActivity('2025-03-01T00:00:00.000Z', asOf), 'dormant');
+  assert.equal(classifyActivity('2024-01-01T00:00:00.000Z', asOf), 'dormant');
+});
+
+test('classifyActivity boundary: stale through 365 days, dormant after that', () => {
+  const asOf = '2026-04-03';
+
+  assert.equal(classifyActivity('2025-04-04T00:00:00.000Z', asOf), 'stale');
+  assert.equal(classifyActivity('2025-04-03T00:00:00.000Z', asOf), 'stale');
+  assert.equal(classifyActivity('2025-04-02T00:00:00.000Z', asOf), 'dormant');
 });

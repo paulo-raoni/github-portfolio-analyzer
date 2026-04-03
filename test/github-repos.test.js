@@ -29,7 +29,7 @@ test('classifyFork returns active when fork is ahead of upstream', async () => {
   );
 });
 
-test('classifyFork falls back to passive when upstream comparison is unavailable', async () => {
+test('classifyFork falls back to recent activity when upstream comparison is unavailable', async () => {
   const client = {
     async request() {
       throw new Error('comparison failed');
@@ -41,21 +41,31 @@ test('classifyFork falls back to passive when upstream comparison is unavailable
       fork: true,
       name: 'my-fork',
       owner: { login: 'owner' },
+      pushed_at: '2026-03-20T00:00:00.000Z',
       parent: {
         owner: { login: 'upstream' },
         default_branch: 'main'
       }
-    }),
-    'passive'
+    }, '2026-04-03'),
+    'active'
   );
+});
+
+test('classifyFork falls back to passive when compare is unavailable and fork is inactive', async () => {
+  const client = {
+    async request() {
+      throw new Error('comparison failed');
+    }
+  };
 
   assert.equal(
     await classifyFork(client, {
       fork: true,
       name: 'my-fork',
       owner: { login: 'owner' },
+      pushed_at: '2025-10-01T00:00:00.000Z',
       parent: null
-    }),
+    }, '2026-04-03'),
     'passive'
   );
 });

@@ -235,7 +235,7 @@ function computeStateAdjustment(state) {
     return 5;
   }
 
-  if (state === 'abandoned' || state === 'archived') {
+  if (state === 'dormant' || state === 'abandoned' || state === 'archived') {
     return -20;
   }
 
