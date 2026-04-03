@@ -1,11 +1,8 @@
-import { daysSince } from '../core/classification.js';
-
 const PAGE_SIZE = 100;
 
 /**
  * Classifies a fork as active or passive.
- * Active forks are either ahead of the upstream default branch or recently active
- * when upstream comparison metadata is unavailable.
+ * Active forks are ahead of the upstream default branch.
  */
 export async function classifyFork(client, repo, asOfDate = new Date().toISOString().slice(0, 10)) {
   if (!repo?.fork) {
@@ -13,9 +10,7 @@ export async function classifyFork(client, repo, asOfDate = new Date().toISOStri
   }
 
   const parent = repo.parent;
-  const pushedAt = repo._pushedAt ?? repo.pushed_at ?? repo.pushedAt ?? null;
-  const isRecentlyActive = pushedAt ? daysSince(pushedAt, asOfDate) <= 90 : false;
-  const fallbackForkType = isRecentlyActive ? 'active' : 'passive';
+  const fallbackForkType = 'passive';
 
   if (!parent) {
     return fallbackForkType;

@@ -29,7 +29,7 @@ test('classifyFork returns active when fork is ahead of upstream', async () => {
   );
 });
 
-test('classifyFork falls back to recent activity when upstream comparison is unavailable', async () => {
+test('classifyFork falls back to passive when comparison API throws, regardless of pushed_at', async () => {
   const client = {
     async request() {
       throw new Error('comparison failed');
@@ -47,11 +47,11 @@ test('classifyFork falls back to recent activity when upstream comparison is una
         default_branch: 'main'
       }
     }, '2026-04-03'),
-    'active'
+    'passive'
   );
 });
 
-test('classifyFork falls back to passive when compare is unavailable and fork is inactive', async () => {
+test('classifyFork falls back to passive when compare is unavailable and parent metadata is missing', async () => {
   const client = {
     async request() {
       throw new Error('comparison failed');
