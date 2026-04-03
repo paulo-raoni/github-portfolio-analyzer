@@ -6,13 +6,14 @@ function inferRepoCategory(repository) {
   const topics = Array.isArray(repository.topics)
     ? repository.topics.map((topic) => String(topic).toLowerCase())
     : [];
+  const nameAndTopics = [name, ...topics].join(' ');
   const all = [name, desc, ...topics].join(' ');
 
   if (/\b(prompt|note|notes|snippet|snippets|cheatsheet|doc|docs|documentation|knowledge|wiki|resource|resources|writing|content|guide|guides|cookbook)\b/.test(all)) {
     return 'content';
   }
 
-  if (/\b(learn|learning|study|exercise|exercises|course|tutorial|tutorials|practice|training|bootcamp|challenge|challenges|kata|class|classes|introduction|intro|essencial|essential|material|curriculum|syllabus|principles)\b/.test(all)) {
+  if (/\b(learn|learning|study|exercise|exercises|course|tutorial|tutorials|practice|training|bootcamp|challenge|challenges|kata|curriculum|syllabus)\b/.test(all)) {
     return 'learning';
   }
 
@@ -20,7 +21,7 @@ function inferRepoCategory(repository) {
     return 'template';
   }
 
-  if (/\b(poc|proof|experiment|spike|demo|prototype|sandbox|playground|try|trying)\b/.test(all)) {
+  if (/\b(poc|proof|experiment|spike|prototype|sandbox|playground)\b/.test(nameAndTopics)) {
     return 'experiment';
   }
 
@@ -30,6 +31,10 @@ function inferRepoCategory(repository) {
 
   if (/\b(infra|infrastructure|docker|kubernetes|k8s|ci|cd|pipeline|deploy|devops|ansible|terraform|nginx|proxy)\b/.test(all)) {
     return 'infra';
+  }
+
+  if (/\b(demo|try|trying)\b/.test(all)) {
+    return 'experiment';
   }
 
   if (/\b(app|application|system|platform|service|api|backend|frontend|web|mobile|dashboard|portal|saas|clock|calculator|game|games|viewer|weather|timer|todo|player|tracker)\b/.test(all)) {
@@ -130,8 +135,12 @@ export function mapIdeaStatusToState(status) {
     return 'stale';
   }
 
-  if (value === 'abandoned' || value === 'dropped' || value === 'dormant') {
+  if (value === 'dormant') {
     return 'dormant';
+  }
+
+  if (value === 'abandoned' || value === 'dropped') {
+    return 'abandoned';
   }
 
   if (value === 'archived') {

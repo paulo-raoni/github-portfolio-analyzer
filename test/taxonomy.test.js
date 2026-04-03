@@ -75,6 +75,18 @@ test('inferRepoCategory: experiment takes priority over library when name has po
   assert.equal(taxonomy.category, 'experiment');
 });
 
+test('inferRepoCategory: library wins when poc is only in description, not name', () => {
+  const taxonomy = buildRepoTaxonomy({
+    archived: false,
+    activity: 'active',
+    name: 'foo-sdk',
+    description: 'Proof of concept SDK for Foo API',
+    topics: []
+  });
+
+  assert.equal(taxonomy.category, 'library');
+});
+
 test('inferRepoCategory: clock/calculator/game repos → product', () => {
   for (const name of ['pomodoro-clock', 'simple-calculator', 'tic-tac-toe-game', 'wikipedia-viewer']) {
     const taxonomy = buildRepoTaxonomy({
@@ -89,12 +101,22 @@ test('inferRepoCategory: clock/calculator/game repos → product', () => {
   }
 });
 
-test('inferRepoCategory: classes/introduction/material → learning', () => {
-  for (const name of [
-    'open-enrollment-classes-introduction-to-github',
-    'python-essencial-material',
-    'intro-to-algorithms'
-  ]) {
+test('inferRepoCategory: conservative names without strong learning signals fall back to tooling', () => {
+  for (const name of ['open-enrollment-classes-introduction-to-github', 'python-essencial-material']) {
+    const taxonomy = buildRepoTaxonomy({
+      archived: false,
+      activity: 'active',
+      name,
+      description: '',
+      topics: []
+    });
+
+    assert.equal(taxonomy.category, 'tooling', `${name} should be tooling`);
+  }
+});
+
+test('inferRepoCategory: unambiguous learning keywords still map to learning', () => {
+  for (const name of ['learn-nodejs', 'javascript-course', 'fizzbuzz-kata']) {
     const taxonomy = buildRepoTaxonomy({
       archived: false,
       activity: 'active',
@@ -125,4 +147,17 @@ test('manual abandoned state remains supported for curated items', () => {
 
   assert.equal(taxonomy.state, 'abandoned');
   assert.ok(taxonomy.nextAction.includes('Done when:'));
+});
+
+test('buildIdeaTaxonomy preserves abandoned state for ideas with status abandoned', () => {
+  const taxonomy = buildIdeaTaxonomy({ status: 'abandoned' });
+
+  assert.equal(taxonomy.state, 'abandoned');
+  assert.notEqual(taxonomy.state, 'dormant');
+});
+
+test('buildIdeaTaxonomy maps status dormant to dormant state', () => {
+  const taxonomy = buildIdeaTaxonomy({ status: 'dormant' });
+
+  assert.equal(taxonomy.state, 'dormant');
 });
