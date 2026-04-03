@@ -62,7 +62,7 @@ test('schema exige meta, summary, matrix, items no top-level', () => {
 
 test('README não contém en dash (–) dentro de blocos Mermaid', () => {
   const readme = readFileSync('README.md', 'utf8');
-  const mermaidBlocks = [...readme.matchAll(/```mermaid\n([\s\S]*?)```/g)]
+  const mermaidBlocks = [...readme.matchAll(/```mermaid\r?\n([\s\S]*?)```/g)]
     .map((match) => match[1]);
   assert.ok(mermaidBlocks.length > 0, 'README deve conter pelo menos um bloco Mermaid');
   for (const block of mermaidBlocks) {
