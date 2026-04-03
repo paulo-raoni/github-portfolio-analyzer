@@ -50,6 +50,10 @@ test('CLI report --strict --presentation-overrides is not rejected as unknown fl
       1,
       '--presentation-overrides must not be rejected by --strict (expected exit 1 = runtime, not 2 = bad flag)'
     );
+    assert.ok(
+      result.stderr.includes('Missing required input'),
+      `esperado erro de runtime em stderr, obtido: ${result.stderr}`
+    );
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
