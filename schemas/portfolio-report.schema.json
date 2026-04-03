@@ -252,6 +252,13 @@
           "type": "string",
           "enum": ["product", "tooling", "library", "learning", "content", "infra", "experiment", "template"]
         },
+        "fork": { "type": "boolean" },
+        "forkType": {
+          "type": "string",
+          "enum": ["active", "passive"]
+        },
+        "private": { "type": "boolean" },
+        "publicAlias": { "type": "string" },
         "presentationState": {
           "type": "string",
           "enum": ["featured", "complete", "in-progress", "salvageable", "learning", "archived", "hidden"]

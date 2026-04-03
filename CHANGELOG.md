@@ -4,7 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.3.0] — 2026-04-03
+
 ### Added
+- `forkType` classification for forks via the GitHub compare API, distinguishing `active` forks from `passive` clones
+- `publicAlias` best-effort generation for private repositories with OpenAI → Gemini → Anthropic fallback
+- Global CLI credential flags: `--github-token`, `--github-username`, `--openai-key`, `--gemini-key`, `--anthropic-key`
+- Interactive prompting for missing GitHub and optional LLM keys when `analyze` runs on a TTY
 - Colored terminal output — progress, success, warning, and error states with ANSI colors
 - Terminal header with ASCII art, version info, user, token status, and policy status
 - Per-repository progress logging during `analyze` (Analyzing N/total: repo-name)

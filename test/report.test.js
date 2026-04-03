@@ -646,13 +646,14 @@ test('report command explain mode does not change report json', { concurrency: f
   assert.match(output, /Next:/);
 });
 
-test('buildReportModel preserves presentation fields from portfolio items', () => {
+test('buildReportModel masks sensitive presentation fields for private items', () => {
   const portfolio = {
     meta: { asOfDate: '2026-03-03' },
     items: [
       {
         slug: 'my-tool',
         type: 'repo',
+        title: 'My Tool Internal',
         fullName: 'owner/my-tool',
         score: 70,
         state: 'active',
@@ -663,6 +664,11 @@ test('buildReportModel preserves presentation fields from portfolio items', () =
         htmlUrl: 'https://github.com/owner/my-tool',
         homepage: 'https://my-tool.dev',
         category: 'tooling',
+        fork: true,
+        forkType: 'active',
+        private: true,
+        publicAlias: 'relay-task-engine',
+        description: 'Private internal automation platform',
         taxonomyMeta: { sources: { effort: 'user' } },
         structuralHealth: { hasReadme: true, hasPackageJson: true, hasCi: true, hasTests: true },
         sizeKb: 300,
@@ -672,11 +678,56 @@ test('buildReportModel preserves presentation fields from portfolio items', () =
   };
   const report = buildReportModel(portfolio, null, { generatedAt: '2026-03-03T00:00:00.000Z' });
   const item = report.items[0];
+  assert.equal(item.slug, 'relay-task-engine');
+  assert.equal(item.title, 'relay-task-engine');
   assert.equal(item.language, 'TypeScript');
   assert.deepEqual(item.topics, ['cli', 'node']);
+  assert.equal(Object.hasOwn(item, 'htmlUrl'), false);
+  assert.equal(Object.hasOwn(item, 'homepage'), false);
+  assert.equal(item.category, 'tooling');
+  assert.equal(item.fork, true);
+  assert.equal(item.forkType, 'active');
+  assert.equal(item.private, true);
+  assert.equal(item.publicAlias, 'relay-task-engine');
+  assert.equal(Object.hasOwn(item, 'description'), false);
+  assert.equal(Object.hasOwn(item, '_description'), false);
+});
+
+test('buildReportModel preserves htmlUrl and homepage for public items', () => {
+  const portfolio = {
+    meta: { asOfDate: '2026-03-03' },
+    items: [
+      {
+        slug: 'my-tool',
+        type: 'repo',
+        title: 'My Tool',
+        fullName: 'owner/my-tool',
+        score: 70,
+        state: 'active',
+        effort: 'm',
+        value: 'high',
+        language: 'TypeScript',
+        topics: ['cli', 'node'],
+        htmlUrl: 'https://github.com/owner/my-tool',
+        homepage: 'https://my-tool.dev',
+        category: 'tooling',
+        description: 'Public developer tool',
+        taxonomyMeta: { sources: { effort: 'user' } },
+        structuralHealth: { hasReadme: true, hasPackageJson: true, hasCi: true, hasTests: true },
+        sizeKb: 300,
+        nextAction: 'Ship v2 — Done when: changelog is published.'
+      }
+    ]
+  };
+
+  const report = buildReportModel(portfolio, null, { generatedAt: '2026-03-03T00:00:00.000Z' });
+  const item = report.items[0];
+
+  assert.equal(item.slug, 'my-tool');
+  assert.equal(item.title, 'My Tool');
   assert.equal(item.htmlUrl, 'https://github.com/owner/my-tool');
   assert.equal(item.homepage, 'https://my-tool.dev');
-  assert.equal(item.category, 'tooling');
+  assert.equal(item.description, 'Public developer tool');
 });
 
 test('buildReportModel omits presentation fields when absent', () => {
@@ -705,6 +756,126 @@ test('buildReportModel omits presentation fields when absent', () => {
   assert.equal(Object.hasOwn(item, 'htmlUrl'), false);
   assert.equal(Object.hasOwn(item, 'homepage'), false);
   assert.equal(Object.hasOwn(item, 'category'), false);
+  assert.equal(Object.hasOwn(item, 'fork'), false);
+  assert.equal(Object.hasOwn(item, 'forkType'), false);
+  assert.equal(Object.hasOwn(item, 'private'), false);
+  assert.equal(Object.hasOwn(item, 'publicAlias'), false);
+});
+
+test('buildReportModel uses raw slug for inventory lookup while masking private output slug/title', () => {
+  const portfolio = {
+    meta: { asOfDate: '2026-03-03' },
+    items: [
+      {
+        slug: 'secret-repo',
+        type: 'repo',
+        title: 'Secret Repo',
+        fullName: 'owner/secret-repo',
+        score: 70,
+        state: 'active',
+        effort: 'm',
+        value: 'high',
+        private: true,
+        publicAlias: 'masked-engine',
+        taxonomyMeta: { sources: { effort: 'user' } },
+        nextAction: 'Ship launch prep — Done when: checklist is green.'
+      }
+    ]
+  };
+  const inventory = {
+    meta: { owner: 'owner' },
+    items: [
+      {
+        slug: 'secret-repo',
+        language: 'TypeScript',
+        sizeKb: 300,
+        structuralHealth: {
+          hasReadme: true,
+          hasPackageJson: true,
+          hasCi: true,
+          hasTests: true
+        }
+      }
+    ]
+  };
+
+  const report = buildReportModel(portfolio, inventory, { generatedAt: '2026-03-03T00:00:00.000Z' });
+  const item = report.items[0];
+
+  assert.equal(item.slug, 'masked-engine');
+  assert.equal(item.title, 'masked-engine');
+  assert.equal(item.completionLevel, 5);
+});
+
+test('report command generates publicAlias for private repos when an LLM key is available', async () => {
+  const workspace = await mkdtemp(path.join(os.tmpdir(), 'gpa-report-public-alias-'));
+  const outputDir = path.join(workspace, 'output');
+  await mkdir(outputDir, { recursive: true });
+
+  await writeFile(
+    path.join(outputDir, 'portfolio.json'),
+    JSON.stringify({
+      meta: { generatedAt: '2026-03-03T00:00:00.000Z', asOfDate: null, count: 1 },
+      items: [
+        {
+          slug: 'private-repo',
+          type: 'repo',
+          title: 'Private Repo',
+          score: 78,
+          state: 'active',
+          effort: 'm',
+          value: 'high',
+          private: true,
+          category: 'tooling',
+          language: 'TypeScript',
+          topics: ['jobs', 'queue'],
+          description: 'Internal orchestration console for async job routing',
+          taxonomyMeta: { sources: { effort: 'user' } },
+          structuralHealth: { hasReadme: true, hasPackageJson: true, hasCi: true, hasTests: true },
+          sizeKb: 320,
+          nextAction: 'Write launch notes — Done when: reviewer signs off.'
+        }
+      ]
+    }, null, 2),
+    'utf8'
+  );
+
+  const originalFetch = globalThis.fetch;
+  const ResponseCtor = globalThis.Response;
+  const requestBodies = [];
+  globalThis.fetch = async (_url, init) => {
+    requestBodies.push(String(init?.body ?? ''));
+    return new ResponseCtor(
+      JSON.stringify({
+        output: [
+          {
+            content: [
+              { text: 'Internal Queue Console' }
+            ]
+          }
+        ]
+      }),
+      {
+        status: 200,
+        headers: { 'content-type': 'application/json' }
+      }
+    );
+  };
+
+  try {
+    await runReportCommand({ 'output-dir': outputDir, format: 'all', quiet: true, openaiKey: 'test-key' });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+
+  const report = await readJsonFile(path.join(outputDir, 'portfolio-report.json'));
+  assert.equal(report.items[0].publicAlias, 'internal-queue-console');
+  assert.equal(report.items[0].slug, 'internal-queue-console');
+  assert.equal(report.items[0].title, 'internal-queue-console');
+  assert.equal(Object.hasOwn(report.items[0], '_description'), false);
+  assert.equal(report.summary.top10ByScore[0].slug, 'internal-queue-console');
+  assert.equal(report.summary.now[0].slug, 'internal-queue-console');
+  assert.equal(requestBodies.some((body) => body.includes('Internal orchestration console for async job routing')), true);
 });
 
 test('applyPresentationOverrides sets presentationState on matching items', () => {

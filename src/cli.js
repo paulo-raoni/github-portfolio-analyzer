@@ -6,7 +6,16 @@ import { parseArgs } from './utils/args.js';
 import packageJson from '../package.json' with { type: 'json' };
 import { UsageError } from './errors.js';
 
-const GLOBAL_OPTIONS = new Set(['help', 'strict', 'version']);
+const GLOBAL_OPTIONS = new Set([
+  'help',
+  'strict',
+  'version',
+  'github-token',
+  'github-username',
+  'openai-key',
+  'gemini-key',
+  'anthropic-key'
+]);
 const COMMAND_OPTIONS = {
   analyze: new Set(['as-of', 'output-dir']),
   'ingest-ideas': new Set(['input', 'prompt', 'output-dir']),
@@ -15,13 +24,15 @@ const COMMAND_OPTIONS = {
 };
 
 export async function runCli(argv) {
-  const { positional, options } = parseArgs(argv);
+  const { positional, options: rawOptions } = parseArgs(argv);
   const [command] = positional;
-  const strictMode = options.strict === true || options.strict === 'true';
+  const strictMode = rawOptions.strict === true || rawOptions.strict === 'true';
 
   if (strictMode) {
-    validateStrictOptions(command, options);
+    validateStrictOptions(command, rawOptions);
   }
+
+  const options = mapCredentialOptions(rawOptions);
 
   if ((options.version === true && !command) || (command === '-v' && positional.length === 1)) {
     console.log(packageJson.version);
@@ -58,6 +69,11 @@ function printHelp() {
   console.log('github-portfolio-analyzer');
   console.log('Usage: github-portfolio-analyzer <command> [options]');
   console.log('  --strict               Global: fail on unknown flags (exit code 2)');
+  console.log('  --github-token TOKEN   Global: override GITHUB_TOKEN');
+  console.log('  --github-username USER Global: override GITHUB_USERNAME');
+  console.log('  --openai-key KEY       Global: override OPENAI_API_KEY');
+  console.log('  --gemini-key KEY       Global: override GEMINI_API_KEY');
+  console.log('  --anthropic-key KEY    Global: override ANTHROPIC_API_KEY');
   console.log('Commands:');
   console.log('  analyze          Analyze GitHub repositories and build inventory outputs');
   console.log('  ingest-ideas     Add or update manual project ideas');
@@ -100,4 +116,15 @@ function validateStrictOptions(command, options) {
     const unknownFlags = unknown.map((key) => `--${key}`).join(', ');
     throw new UsageError(`Unknown option(s): ${unknownFlags}`);
   }
+}
+
+function mapCredentialOptions(options) {
+  return {
+    ...options,
+    ...(options['github-token'] !== undefined ? { githubToken: options['github-token'] } : {}),
+    ...(options['github-username'] !== undefined ? { githubUsername: options['github-username'] } : {}),
+    ...(options['openai-key'] !== undefined ? { openaiKey: options['openai-key'] } : {}),
+    ...(options['gemini-key'] !== undefined ? { geminiKey: options['gemini-key'] } : {}),
+    ...(options['anthropic-key'] !== undefined ? { anthropicKey: options['anthropic-key'] } : {})
+  };
 }

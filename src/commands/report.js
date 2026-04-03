@@ -1,6 +1,8 @@
 import path from 'node:path';
 import { buildReportModel } from '../core/report.js';
+import { createPublicAliasLLMCaller, generatePublicAlias } from '../core/publicAliasGenerator.js';
 import { loadPresentationOverrides, applyPresentationOverrides } from '../core/presentationOverrides.js';
+import { getEnv } from '../config.js';
 import { readJsonFile, readJsonFileIfExists } from '../io/files.js';
 import { writeReportAscii, writeReportJson, writeReportMarkdown } from '../io/report.js';
 import { UsageError } from '../errors.js';
@@ -46,9 +48,36 @@ export async function runReportCommand(options = {}) {
   const presentationOverridesPath = resolvePresentationOverridesPath(options);
   const presentationOverrides = await loadPresentationOverrides(presentationOverridesPath);
   const reportModel = buildReportModel(portfolio, inventory, { policyOverlay });
+  const portfolioDescriptionBySlug = new Map(
+    (Array.isArray(portfolio?.items) ? portfolio.items : []).map((item) => [
+      String(item?.slug ?? '').trim(),
+      item?.description ?? ''
+    ])
+  );
+  const callLLM = createPublicAliasLLMCaller(getEnv(options));
 
   if (presentationOverrides.size > 0) {
     reportModel.items = applyPresentationOverrides(reportModel.items, presentationOverrides);
+  }
+
+  if (typeof callLLM === 'function') {
+    const privateItems = reportModel.items.filter((item) => item.private && !item.publicAlias);
+    const aliasBySlug = new Map();
+
+    for (const item of privateItems) {
+      const itemForAlias = {
+        ...item,
+        description: portfolioDescriptionBySlug.get(String(item.slug ?? '').trim()) ?? ''
+      };
+      item.publicAlias = await generatePublicAlias(itemForAlias, callLLM);
+      if (item.publicAlias) {
+        aliasBySlug.set(item.slug, item.publicAlias);
+      }
+    }
+
+    if (aliasBySlug.size > 0) {
+      applyAliasesToReportModel(reportModel, aliasBySlug);
+    }
   }
 
   const writtenPaths = [];
@@ -124,6 +153,27 @@ function validatePolicyOverlay(policy, policyPath) {
 
   if (policy.version !== undefined && policy.version !== 1) {
     throw new Error(`Invalid policy file at ${policyPath}: unsupported version ${policy.version}. Expected 1.`);
+  }
+}
+
+function applyAliasesToReportModel(reportModel, aliasBySlug) {
+  for (const item of reportModel.items) {
+    if (!item.private || !item.publicAlias) {
+      continue;
+    }
+
+    item.slug = item.publicAlias;
+    item.title = item.publicAlias;
+  }
+
+  const sections = ['top10ByScore', 'now', 'next', 'later', 'park'];
+  for (const section of sections) {
+    for (const item of reportModel.summary[section] ?? []) {
+      const alias = aliasBySlug.get(item.slug);
+      if (alias) {
+        item.slug = alias;
+      }
+    }
   }
 }
 
