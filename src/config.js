@@ -44,10 +44,32 @@ export async function promptMissingKeys(
   const env = getEnv(args);
   const result = { ...args };
   const rl = createInterface({ input: process.stdin, output: process.stderr });
+  rl.stdoutMuted = false;
 
-  const ask = (label, hint) =>
+  const askVisible = (label, hint) =>
     new Promise((resolve) => {
       rl.question(`  ${label}${hint ? ` (${hint})` : ''}: `, resolve);
+    });
+
+  const askSilent = (label, hint) =>
+    new Promise((resolve) => {
+      const originalWriteToOutput = rl._writeToOutput;
+      rl.stdoutMuted = true;
+      rl._writeToOutput = (str) => {
+        if (rl.stdoutMuted) {
+          rl.output.write('');
+          return;
+        }
+
+        rl.output.write(str);
+      };
+
+      rl.question(`  ${label}${hint ? ` (${hint})` : ''}: `, (value) => {
+        rl.stdoutMuted = false;
+        rl._writeToOutput = originalWriteToOutput;
+        rl.output.write('\n');
+        resolve(value);
+      });
     });
 
   for (const { key, label } of required) {
@@ -55,7 +77,7 @@ export async function promptMissingKeys(
       continue;
     }
 
-    const value = await ask(label, 'required');
+    const value = await askSilent(label, 'required');
     if (!value.trim()) {
       rl.close();
       throw new Error(`${label} is required.`);
@@ -69,7 +91,8 @@ export async function promptMissingKeys(
       continue;
     }
 
-    const value = await ask(label, 'optional, Enter to skip');
+    const prompt = key === 'githubUsername' ? askVisible : askSilent;
+    const value = await prompt(label, 'optional, Enter to skip');
     if (value.trim()) {
       result[key] = value.trim();
     }

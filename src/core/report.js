@@ -142,8 +142,15 @@ export function buildReportModel(portfolioData, inventoryData = null, options = 
   const inventoryLookup = buildInventoryLookup(inventoryItems);
 
   const reportItems = portfolioItems.map((item) => {
-    const slug = String(item.slug ?? '').trim();
-    const inventorySignals = inventoryLookup.get(slug) ?? null;
+    const rawSlug = String(item.slug ?? '').trim();
+    const inventorySignals = inventoryLookup.get(rawSlug) ?? null;
+    const isPrivate = Boolean(item.private);
+    const alias = typeof item.publicAlias === 'string' && item.publicAlias.trim()
+      ? item.publicAlias.trim()
+      : null;
+    const slug = isPrivate && alias ? alias : rawSlug;
+    const rawTitle = resolveTitle(item);
+    const title = isPrivate && alias ? alias : rawTitle;
 
     const completionLevel = computeCompletionLevel(item, inventorySignals);
     const effortEstimate = computeEffortEstimate(item, completionLevel, inventorySignals);
@@ -163,9 +170,9 @@ export function buildReportModel(portfolioData, inventoryData = null, options = 
     } = applyPolicyOverlayToItem(
       {
         ...item,
-        slug,
+        slug: rawSlug,
         type: resolveItemType(item),
-        title: resolveTitle(item),
+        title: rawTitle,
         tags: collectItemTags(item)
       },
       {
@@ -180,7 +187,7 @@ export function buildReportModel(portfolioData, inventoryData = null, options = 
     return {
       slug,
       type: resolveItemType(item),
-      title: resolveTitle(item),
+      title,
       score: Number(item.score ?? 0),
       state: String(item.state ?? 'idea'),
       effort: normalizeEffort(item.effort) ?? 'm',
@@ -205,7 +212,9 @@ export function buildReportModel(portfolioData, inventoryData = null, options = 
       ...(item.fork != null ? { fork: Boolean(item.fork) } : {}),
       ...(item.forkType != null ? { forkType: item.forkType } : {}),
       ...(item.private != null ? { private: Boolean(item.private) } : {}),
-      ...(item.publicAlias != null ? { publicAlias: item.publicAlias } : {})
+      ...(item.publicAlias != null ? { publicAlias: item.publicAlias } : {}),
+      ...(!isPrivate && item.description != null ? { description: item.description } : {}),
+      ...(isPrivate && item.description != null ? { _description: item.description } : {})
     };
   });
 

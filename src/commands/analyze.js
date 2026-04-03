@@ -20,10 +20,10 @@ export async function runAnalyzeCommand(options = {}) {
   args = await promptMissingKeys(args, {
     quiet: args.quiet,
     required: [
-      { key: 'githubToken', label: 'GitHub Personal Access Token' },
-      { key: 'githubUsername', label: 'GitHub Username' }
+      { key: 'githubToken', label: 'GitHub Personal Access Token' }
     ],
     optional: [
+      { key: 'githubUsername', label: 'GitHub Username' },
       { key: 'openaiKey', label: 'OpenAI API Key' },
       { key: 'geminiKey', label: 'Gemini API Key' },
       { key: 'anthropicKey', label: 'Anthropic API Key' }
@@ -42,14 +42,6 @@ export async function runAnalyzeCommand(options = {}) {
   const asOfDate = resolveAsOfDate(typeof args['as-of'] === 'string' ? args['as-of'] : undefined);
   const outputDir = typeof args['output-dir'] === 'string' ? args['output-dir'] : 'output';
 
-  printHeader({
-    command: 'analyze',
-    asOfDate,
-    outputDir,
-    hasToken: Boolean(token),
-    hasPolicy: false,
-  });
-
   let user;
   try {
     user = await github.getAuthenticatedUser();
@@ -61,6 +53,15 @@ export async function runAnalyzeCommand(options = {}) {
     }
     throw err;
   }
+
+  printHeader({
+    command: 'analyze',
+    asOfDate,
+    outputDir,
+    hasToken: Boolean(token),
+    hasPolicy: false,
+    username: args.githubUsername || user.login
+  });
 
   let repositories;
   try {

@@ -13,9 +13,9 @@ ${AMBER}  later█░░░ ↑${RESET}
 ${DIM}            ↓${RESET}
 ${GREEN}  ✓ report.json${RESET}`;
 
-export function printHeader({ command: _command, asOfDate, outputDir, hasToken, hasPolicy, version }) {
+export function printHeader({ command: _command, asOfDate, outputDir, hasToken, hasPolicy, version, username }) {
   const node = process.version;
-  const user = process.env.GITHUB_USERNAME ?? '—';
+  const user = username ?? process.env.GITHUB_USERNAME ?? '—';
   const token = hasToken ? `${GREEN}✓ set${RESET}` : `${AMBER}not set${RESET}`;
   const policy = hasPolicy ? `${GREEN}✓ set${RESET}` : `${GRAY}not set${RESET}`;
   const ver = version ?? packageJson.version;

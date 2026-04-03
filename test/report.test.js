@@ -653,6 +653,7 @@ test('buildReportModel preserves presentation fields from portfolio items', () =
       {
         slug: 'my-tool',
         type: 'repo',
+        title: 'My Tool Internal',
         fullName: 'owner/my-tool',
         score: 70,
         state: 'active',
@@ -667,6 +668,7 @@ test('buildReportModel preserves presentation fields from portfolio items', () =
         forkType: 'active',
         private: true,
         publicAlias: 'relay-task-engine',
+        description: 'Private internal automation platform',
         taxonomyMeta: { sources: { effort: 'user' } },
         structuralHealth: { hasReadme: true, hasPackageJson: true, hasCi: true, hasTests: true },
         sizeKb: 300,
@@ -676,6 +678,8 @@ test('buildReportModel preserves presentation fields from portfolio items', () =
   };
   const report = buildReportModel(portfolio, null, { generatedAt: '2026-03-03T00:00:00.000Z' });
   const item = report.items[0];
+  assert.equal(item.slug, 'relay-task-engine');
+  assert.equal(item.title, 'relay-task-engine');
   assert.equal(item.language, 'TypeScript');
   assert.deepEqual(item.topics, ['cli', 'node']);
   assert.equal(item.htmlUrl, 'https://github.com/owner/my-tool');
@@ -685,6 +689,8 @@ test('buildReportModel preserves presentation fields from portfolio items', () =
   assert.equal(item.forkType, 'active');
   assert.equal(item.private, true);
   assert.equal(item.publicAlias, 'relay-task-engine');
+  assert.equal(Object.hasOwn(item, 'description'), false);
+  assert.equal(item._description, 'Private internal automation platform');
 });
 
 test('buildReportModel omits presentation fields when absent', () => {
@@ -719,6 +725,51 @@ test('buildReportModel omits presentation fields when absent', () => {
   assert.equal(Object.hasOwn(item, 'publicAlias'), false);
 });
 
+test('buildReportModel uses raw slug for inventory lookup while masking private output slug/title', () => {
+  const portfolio = {
+    meta: { asOfDate: '2026-03-03' },
+    items: [
+      {
+        slug: 'secret-repo',
+        type: 'repo',
+        title: 'Secret Repo',
+        fullName: 'owner/secret-repo',
+        score: 70,
+        state: 'active',
+        effort: 'm',
+        value: 'high',
+        private: true,
+        publicAlias: 'masked-engine',
+        taxonomyMeta: { sources: { effort: 'user' } },
+        nextAction: 'Ship launch prep — Done when: checklist is green.'
+      }
+    ]
+  };
+  const inventory = {
+    meta: { owner: 'owner' },
+    items: [
+      {
+        slug: 'secret-repo',
+        language: 'TypeScript',
+        sizeKb: 300,
+        structuralHealth: {
+          hasReadme: true,
+          hasPackageJson: true,
+          hasCi: true,
+          hasTests: true
+        }
+      }
+    ]
+  };
+
+  const report = buildReportModel(portfolio, inventory, { generatedAt: '2026-03-03T00:00:00.000Z' });
+  const item = report.items[0];
+
+  assert.equal(item.slug, 'masked-engine');
+  assert.equal(item.title, 'masked-engine');
+  assert.equal(item.completionLevel, 5);
+});
+
 test('report command generates publicAlias for private repos when an LLM key is available', async () => {
   const workspace = await mkdtemp(path.join(os.tmpdir(), 'gpa-report-public-alias-'));
   const outputDir = path.join(workspace, 'output');
@@ -741,6 +792,7 @@ test('report command generates publicAlias for private repos when an LLM key is 
           category: 'tooling',
           language: 'TypeScript',
           topics: ['jobs', 'queue'],
+          description: 'Internal orchestration console for async job routing',
           taxonomyMeta: { sources: { effort: 'user' } },
           structuralHealth: { hasReadme: true, hasPackageJson: true, hasCi: true, hasTests: true },
           sizeKb: 320,
@@ -753,8 +805,10 @@ test('report command generates publicAlias for private repos when an LLM key is 
 
   const originalFetch = globalThis.fetch;
   const ResponseCtor = globalThis.Response;
-  globalThis.fetch = async () =>
-    new ResponseCtor(
+  const requestBodies = [];
+  globalThis.fetch = async (_url, init) => {
+    requestBodies.push(String(init?.body ?? ''));
+    return new ResponseCtor(
       JSON.stringify({
         output: [
           {
@@ -769,6 +823,7 @@ test('report command generates publicAlias for private repos when an LLM key is 
         headers: { 'content-type': 'application/json' }
       }
     );
+  };
 
   try {
     await runReportCommand({ 'output-dir': outputDir, format: 'all', quiet: true, openaiKey: 'test-key' });
@@ -778,6 +833,12 @@ test('report command generates publicAlias for private repos when an LLM key is 
 
   const report = await readJsonFile(path.join(outputDir, 'portfolio-report.json'));
   assert.equal(report.items[0].publicAlias, 'internal-queue-console');
+  assert.equal(report.items[0].slug, 'internal-queue-console');
+  assert.equal(report.items[0].title, 'internal-queue-console');
+  assert.equal(Object.hasOwn(report.items[0], '_description'), false);
+  assert.equal(report.summary.top10ByScore[0].slug, 'internal-queue-console');
+  assert.equal(report.summary.now[0].slug, 'internal-queue-console');
+  assert.equal(requestBodies.some((body) => body.includes('Internal orchestration console for async job routing')), true);
 });
 
 test('applyPresentationOverrides sets presentationState on matching items', () => {
