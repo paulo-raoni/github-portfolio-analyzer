@@ -526,7 +526,7 @@ flowchart LR
     end
     subgraph mid [ ]
         direction RL
-        J(computePriorityBand) <-- I([effort xs–xl]) <-- H(computeEffortEstimate) <-- G([CL 0–5]) <-- F(computeCompletionLevel)
+        J(computePriorityBand) <-- I([effort xs-xl]) <-- H(computeEffortEstimate) <-- G([CL 0–5]) <-- F(computeCompletionLevel)
     end
     E --> F
     E -. feeds .-> J

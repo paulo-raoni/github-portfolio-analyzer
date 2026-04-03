@@ -174,3 +174,87 @@ test('buildPortfolio preserves repo taxonomy contract and deterministic order', 
     assert.ok(item.nextAction.includes('— Done when:'));
   }
 });
+
+test('ingestIdeas: state:abandoned preservado (não vira dormant)', async () => {
+  const workspace = await mkdtemp(path.join(os.tmpdir(), 'gpa-ideas-abandoned-'));
+  const ideasDir = path.join(workspace, 'ideas');
+  const outputDir = path.join(workspace, 'output');
+  await mkdir(ideasDir, { recursive: true });
+  await mkdir(outputDir, { recursive: true });
+
+  await writeFile(
+    path.join(ideasDir, 'input.json'),
+    JSON.stringify([
+      {
+        title: 'Dropped Idea',
+        state: 'abandoned',
+        nextAction: 'Decide retain or archive — Done when: README documents rationale.'
+      }
+    ]),
+    'utf8'
+  );
+
+  await ingestIdeas({ input: path.join(ideasDir, 'input.json'), 'output-dir': outputDir });
+
+  const ideas = await readJsonFile(path.join(outputDir, 'ideas.json'));
+  const idea = ideas.items[0];
+  assert.equal(idea.state, 'abandoned');
+  assert.notEqual(idea.state, 'dormant', 'state:abandoned não deve virar dormant');
+});
+
+test('ingestIdeas: merge por slug na segunda execução', async () => {
+  const workspace = await mkdtemp(path.join(os.tmpdir(), 'gpa-ideas-merge-'));
+  const ideasDir = path.join(workspace, 'ideas');
+  const outputDir = path.join(workspace, 'output');
+  await mkdir(ideasDir, { recursive: true });
+  await mkdir(outputDir, { recursive: true });
+
+  const inputPath = path.join(ideasDir, 'input.json');
+
+  await writeFile(inputPath, JSON.stringify([
+    {
+      title: 'My Idea',
+      nextAction: 'Define MVP — Done when: spec is written.'
+    }
+  ]), 'utf8');
+  await ingestIdeas({ input: inputPath, 'output-dir': outputDir });
+
+  await writeFile(inputPath, JSON.stringify([
+    {
+      title: 'My Idea',
+      nextAction: 'Ship v1 — Done when: deployed to prod.'
+    }
+  ]), 'utf8');
+  await ingestIdeas({ input: inputPath, 'output-dir': outputDir });
+
+  const ideas = await readJsonFile(path.join(outputDir, 'ideas.json'));
+  assert.equal(ideas.items.length, 1, 'slug duplicado deve mergear, não duplicar');
+  assert.ok(
+    ideas.items[0].nextAction.includes('Ship v1'),
+    'segunda execução deve atualizar nextAction'
+  );
+});
+
+test('ingestIdeas: nextAction sem "Done when:" lança erro', async () => {
+  const workspace = await mkdtemp(path.join(os.tmpdir(), 'gpa-ideas-invalid-'));
+  const ideasDir = path.join(workspace, 'ideas');
+  const outputDir = path.join(workspace, 'output');
+  await mkdir(ideasDir, { recursive: true });
+  await mkdir(outputDir, { recursive: true });
+
+  await writeFile(
+    path.join(ideasDir, 'input.json'),
+    JSON.stringify([
+      {
+        title: 'Bad Idea',
+        nextAction: 'This has no done-when clause at all'
+      }
+    ]),
+    'utf8'
+  );
+
+  await assert.rejects(
+    () => ingestIdeas({ input: path.join(ideasDir, 'input.json'), 'output-dir': outputDir }),
+    /Invalid nextAction format/
+  );
+});

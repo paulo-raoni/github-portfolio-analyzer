@@ -1,12 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdtempSync, mkdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execSync, spawnSync } from 'node:child_process';
 
+const cliPath = join(process.cwd(), 'bin', 'github-portfolio-analyzer.js');
+
 test('CLI --version returns a semver string', () => {
-  const output = execSync('node bin/github-portfolio-analyzer.js --version', {
+  const output = execSync(`node "${cliPath}" --version`, {
     encoding: 'utf8'
   }).trim();
 
@@ -17,7 +19,7 @@ test('CLI --help exits 0 and contains usage information', () => {
   let output = '';
 
   try {
-    output = execSync('node bin/github-portfolio-analyzer.js --help', {
+    output = execSync(`node "${cliPath}" --help`, {
       encoding: 'utf8'
     });
   } catch (error) {
@@ -39,8 +41,8 @@ test('CLI report --strict --presentation-overrides is not rejected as unknown fl
     writeFileSync(overridesFile, JSON.stringify([]));
     const result = spawnSync(
       process.execPath,
-      ['bin/github-portfolio-analyzer.js', 'report', '--strict', '--presentation-overrides', overridesFile],
-      { encoding: 'utf8' }
+      [cliPath, 'report', '--strict', '--presentation-overrides', overridesFile],
+      { encoding: 'utf8', cwd: dir }
     );
 
     assert.notEqual(
@@ -56,11 +58,58 @@ test('CLI report --strict --presentation-overrides is not rejected as unknown fl
 test('CLI unknown command exits non-zero', () => {
   const result = spawnSync(
     process.execPath,
-    ['bin/github-portfolio-analyzer.js', 'not-a-command'],
+    [cliPath, 'not-a-command'],
     { encoding: 'utf8' }
   );
 
   assert.ok(result.status >= 1);
+});
+
+test('CLI report --format json --quiet writes only JSON to stdout', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'gpa-e2e-'));
+
+  try {
+    const outputDir = join(dir, 'output');
+    mkdirSync(outputDir, { recursive: true });
+
+    const portfolioFixture = {
+      meta: {
+        generatedAt: '2026-04-03T00:00:00.000Z',
+        asOfDate: '2026-04-03',
+        count: 1
+      },
+      items: [
+        {
+          slug: 'test-repo',
+          type: 'idea',
+          title: 'Test Repo',
+          score: 75,
+          state: 'idea',
+          effort: 'm',
+          value: 'medium',
+          taxonomyMeta: {
+            sources: {
+              effort: 'default'
+            }
+          },
+          nextAction: 'Ship improvement — Done when: PR merged.'
+        }
+      ]
+    };
+    writeFileSync(join(outputDir, 'portfolio.json'), JSON.stringify(portfolioFixture));
+
+    const result = spawnSync(
+      process.execPath,
+      [cliPath, 'report', '--output-dir', outputDir, '--format', 'json', '--quiet'],
+      { encoding: 'utf8' }
+    );
+    assert.equal(result.status, 0, `report failed:\n${result.stderr}`);
+
+    const parsed = JSON.parse(result.stdout);
+    assert.ok(parsed.items, 'stdout deve conter JSON com campo items');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test('manifest version matches package.json version', () => {

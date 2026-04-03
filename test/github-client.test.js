@@ -95,6 +95,7 @@ test('GithubClient retries on 429 and succeeds', async () => {
 test('GithubClient retries on 500 and succeeds on third attempt', async () => {
   const client = new GithubClient('token');
   client.maxRetries = 3;
+  client._delay = async () => {};
   const originalFetch = globalThis.fetch;
   let calls = 0;
 
@@ -119,6 +120,7 @@ test('GithubClient retries on 500 and succeeds on third attempt', async () => {
 test('GithubClient throws after exhausting retries on 500', async () => {
   const client = new GithubClient('token');
   client.maxRetries = 1;
+  client._delay = async () => {};
   const originalFetch = globalThis.fetch;
 
   globalThis.fetch = async () => makeResponse(500, { message: 'Server Error' });
