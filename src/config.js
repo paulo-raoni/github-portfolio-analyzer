@@ -35,15 +35,15 @@ export function requireGithubToken(args = {}) {
  */
 export async function promptMissingKeys(
   args = {},
-  { required = [], optional = [], quiet = false } = {}
+  { required = [], optional = [], quiet = false, input = process.stdin, output = process.stderr } = {}
 ) {
-  if (quiet || !process.stdin.isTTY) {
+  if (quiet || !input?.isTTY) {
     return args;
   }
 
   const env = getEnv(args);
   const result = { ...args };
-  const rl = createInterface({ input: process.stdin, output: process.stderr });
+  const rl = createInterface({ input, output });
   rl.stdoutMuted = false;
 
   const askVisible = (label, hint) =>
@@ -54,6 +54,8 @@ export async function promptMissingKeys(
   const askSilent = (label, hint) =>
     new Promise((resolve) => {
       const originalWriteToOutput = rl._writeToOutput;
+      const hintText = hint ? ` (${hint})` : '';
+      rl.output.write(`  ${label}${hintText}: `);
       rl.stdoutMuted = true;
       rl._writeToOutput = (str) => {
         if (rl.stdoutMuted) {
@@ -64,7 +66,7 @@ export async function promptMissingKeys(
         rl.output.write(str);
       };
 
-      rl.question(`  ${label}${hint ? ` (${hint})` : ''}: `, (value) => {
+      rl.question('', (value) => {
         rl.stdoutMuted = false;
         rl._writeToOutput = originalWriteToOutput;
         rl.output.write('\n');

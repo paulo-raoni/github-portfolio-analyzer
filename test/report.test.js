@@ -646,7 +646,7 @@ test('report command explain mode does not change report json', { concurrency: f
   assert.match(output, /Next:/);
 });
 
-test('buildReportModel preserves presentation fields from portfolio items', () => {
+test('buildReportModel masks sensitive presentation fields for private items', () => {
   const portfolio = {
     meta: { asOfDate: '2026-03-03' },
     items: [
@@ -682,15 +682,52 @@ test('buildReportModel preserves presentation fields from portfolio items', () =
   assert.equal(item.title, 'relay-task-engine');
   assert.equal(item.language, 'TypeScript');
   assert.deepEqual(item.topics, ['cli', 'node']);
-  assert.equal(item.htmlUrl, 'https://github.com/owner/my-tool');
-  assert.equal(item.homepage, 'https://my-tool.dev');
+  assert.equal(Object.hasOwn(item, 'htmlUrl'), false);
+  assert.equal(Object.hasOwn(item, 'homepage'), false);
   assert.equal(item.category, 'tooling');
   assert.equal(item.fork, true);
   assert.equal(item.forkType, 'active');
   assert.equal(item.private, true);
   assert.equal(item.publicAlias, 'relay-task-engine');
   assert.equal(Object.hasOwn(item, 'description'), false);
-  assert.equal(item._description, 'Private internal automation platform');
+  assert.equal(Object.hasOwn(item, '_description'), false);
+});
+
+test('buildReportModel preserves htmlUrl and homepage for public items', () => {
+  const portfolio = {
+    meta: { asOfDate: '2026-03-03' },
+    items: [
+      {
+        slug: 'my-tool',
+        type: 'repo',
+        title: 'My Tool',
+        fullName: 'owner/my-tool',
+        score: 70,
+        state: 'active',
+        effort: 'm',
+        value: 'high',
+        language: 'TypeScript',
+        topics: ['cli', 'node'],
+        htmlUrl: 'https://github.com/owner/my-tool',
+        homepage: 'https://my-tool.dev',
+        category: 'tooling',
+        description: 'Public developer tool',
+        taxonomyMeta: { sources: { effort: 'user' } },
+        structuralHealth: { hasReadme: true, hasPackageJson: true, hasCi: true, hasTests: true },
+        sizeKb: 300,
+        nextAction: 'Ship v2 — Done when: changelog is published.'
+      }
+    ]
+  };
+
+  const report = buildReportModel(portfolio, null, { generatedAt: '2026-03-03T00:00:00.000Z' });
+  const item = report.items[0];
+
+  assert.equal(item.slug, 'my-tool');
+  assert.equal(item.title, 'My Tool');
+  assert.equal(item.htmlUrl, 'https://github.com/owner/my-tool');
+  assert.equal(item.homepage, 'https://my-tool.dev');
+  assert.equal(item.description, 'Public developer tool');
 });
 
 test('buildReportModel omits presentation fields when absent', () => {

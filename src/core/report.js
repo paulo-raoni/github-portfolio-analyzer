@@ -206,8 +206,8 @@ export function buildReportModel(portfolioData, inventoryData = null, options = 
       // presentation fields — passed directly from portfolio item
       ...(item.language != null ? { language: item.language } : {}),
       ...(Array.isArray(item.topics) && item.topics.length > 0 ? { topics: item.topics } : {}),
-      ...(item.htmlUrl != null ? { htmlUrl: item.htmlUrl } : {}),
-      ...(item.homepage != null ? { homepage: item.homepage } : {}),
+      ...(!isPrivate && item.htmlUrl != null ? { htmlUrl: item.htmlUrl } : {}),
+      ...(!isPrivate && item.homepage != null ? { homepage: item.homepage } : {}),
       ...(item.category != null ? { category: item.category } : {}),
       ...(item.fork != null ? { fork: Boolean(item.fork) } : {}),
       ...(item.forkType != null ? { forkType: item.forkType } : {}),
@@ -273,7 +273,12 @@ export function buildReportModel(portfolioData, inventoryData = null, options = 
     matrix: {
       completionByEffort: matrix
     },
-    items: sortedByPriority.map(({ priorityScore: _priorityScore, ...item }) => item)
+    items: sortedByPriority.map((item) => {
+      const publicItem = { ...item };
+      delete publicItem.priorityScore;
+      delete publicItem._description;
+      return publicItem;
+    })
   };
 }
 

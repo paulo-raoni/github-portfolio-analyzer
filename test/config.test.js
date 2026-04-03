@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { getEnv, requireGithubToken } from '../src/config.js';
+import { PassThrough } from 'node:stream';
+import { getEnv, promptMissingKeys, requireGithubToken } from '../src/config.js';
 
 test('getEnv applies CLI-style overrides over process env', () => {
   const originalGithubToken = process.env.GITHUB_TOKEN;
@@ -33,6 +34,37 @@ test('requireGithubToken reports CLI override guidance in the error message', ()
     () => requireGithubToken({ githubToken: '' }),
     /Missing GITHUB_TOKEN\. Add it to your \.env file or pass --github-token <token>/
   );
+});
+
+test('promptMissingKeys shows silent prompt labels without echoing secret input', async () => {
+  const input = new PassThrough();
+  input.isTTY = true;
+
+  const output = new PassThrough();
+  output.isTTY = true;
+
+  let rendered = '';
+  output.on('data', (chunk) => {
+    rendered += String(chunk);
+  });
+
+  const promptPromise = promptMissingKeys(
+    {},
+    {
+      required: [{ key: 'apiSecret', label: 'OpenAI API key' }],
+      input,
+      output
+    }
+  );
+
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  input.write('super-secret-value\n');
+
+  const result = await promptPromise;
+
+  assert.equal(result.apiSecret, 'super-secret-value');
+  assert.match(rendered, /OpenAI API key \(required\): /);
+  assert.doesNotMatch(rendered, /super-secret-value/);
 });
 
 function restoreEnv(key, value) {

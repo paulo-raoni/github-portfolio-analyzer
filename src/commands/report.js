@@ -48,6 +48,12 @@ export async function runReportCommand(options = {}) {
   const presentationOverridesPath = resolvePresentationOverridesPath(options);
   const presentationOverrides = await loadPresentationOverrides(presentationOverridesPath);
   const reportModel = buildReportModel(portfolio, inventory, { policyOverlay });
+  const portfolioDescriptionBySlug = new Map(
+    (Array.isArray(portfolio?.items) ? portfolio.items : []).map((item) => [
+      String(item?.slug ?? '').trim(),
+      item?.description ?? ''
+    ])
+  );
   const callLLM = createPublicAliasLLMCaller(getEnv(options));
 
   if (presentationOverrides.size > 0) {
@@ -59,7 +65,10 @@ export async function runReportCommand(options = {}) {
     const aliasBySlug = new Map();
 
     for (const item of privateItems) {
-      const itemForAlias = { ...item, description: item._description ?? item.description };
+      const itemForAlias = {
+        ...item,
+        description: portfolioDescriptionBySlug.get(String(item.slug ?? '').trim()) ?? ''
+      };
       item.publicAlias = await generatePublicAlias(itemForAlias, callLLM);
       if (item.publicAlias) {
         aliasBySlug.set(item.slug, item.publicAlias);
@@ -69,10 +78,6 @@ export async function runReportCommand(options = {}) {
     if (aliasBySlug.size > 0) {
       applyAliasesToReportModel(reportModel, aliasBySlug);
     }
-  }
-
-  for (const item of reportModel.items) {
-    delete item._description;
   }
 
   const writtenPaths = [];
