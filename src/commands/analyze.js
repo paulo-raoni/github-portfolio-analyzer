@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { getEnv, requireGithubToken } from '../config.js';
+import { promptMissingKeys, requireGithubToken } from '../config.js';
 import { GithubClient } from '../github/client.js';
 import { fetchAllRepositories, normalizeRepository } from '../github/repos.js';
 import { inspectRepositoryStructure } from '../github/repo-inspection.js';
@@ -15,19 +15,32 @@ import { progress, success, error, warn, fatal } from '../utils/output.js';
 
 export async function runAnalyzeCommand(options = {}) {
   const startTime = Date.now();
-  const env = getEnv();
+  let args = { ...options };
+
+  args = await promptMissingKeys(args, {
+    quiet: args.quiet,
+    required: [
+      { key: 'githubToken', label: 'GitHub Personal Access Token' },
+      { key: 'githubUsername', label: 'GitHub Username' }
+    ],
+    optional: [
+      { key: 'openaiKey', label: 'OpenAI API Key' },
+      { key: 'geminiKey', label: 'Gemini API Key' },
+      { key: 'anthropicKey', label: 'Anthropic API Key' }
+    ]
+  });
 
   let token;
   try {
-    token = requireGithubToken(env);
+    token = requireGithubToken(args);
   } catch (err) {
-    fatal('GITHUB_TOKEN missing — set it in .env: GITHUB_TOKEN=your_token');
+    fatal('GITHUB_TOKEN missing — set it in .env or pass --github-token');
     throw err;
   }
 
   const github = new GithubClient(token);
-  const asOfDate = resolveAsOfDate(typeof options['as-of'] === 'string' ? options['as-of'] : undefined);
-  const outputDir = typeof options['output-dir'] === 'string' ? options['output-dir'] : 'output';
+  const asOfDate = resolveAsOfDate(typeof args['as-of'] === 'string' ? args['as-of'] : undefined);
+  const outputDir = typeof args['output-dir'] === 'string' ? args['output-dir'] : 'output';
 
   printHeader({
     command: 'analyze',

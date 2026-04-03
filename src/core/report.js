@@ -201,7 +201,11 @@ export function buildReportModel(portfolioData, inventoryData = null, options = 
       ...(Array.isArray(item.topics) && item.topics.length > 0 ? { topics: item.topics } : {}),
       ...(item.htmlUrl != null ? { htmlUrl: item.htmlUrl } : {}),
       ...(item.homepage != null ? { homepage: item.homepage } : {}),
-      ...(item.category != null ? { category: item.category } : {})
+      ...(item.category != null ? { category: item.category } : {}),
+      ...(item.fork != null ? { fork: Boolean(item.fork) } : {}),
+      ...(item.forkType != null ? { forkType: item.forkType } : {}),
+      ...(item.private != null ? { private: Boolean(item.private) } : {}),
+      ...(item.publicAlias != null ? { publicAlias: item.publicAlias } : {})
     };
   });
 

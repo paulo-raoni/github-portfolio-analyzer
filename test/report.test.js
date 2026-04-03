@@ -663,6 +663,10 @@ test('buildReportModel preserves presentation fields from portfolio items', () =
         htmlUrl: 'https://github.com/owner/my-tool',
         homepage: 'https://my-tool.dev',
         category: 'tooling',
+        fork: true,
+        forkType: 'active',
+        private: true,
+        publicAlias: 'relay-task-engine',
         taxonomyMeta: { sources: { effort: 'user' } },
         structuralHealth: { hasReadme: true, hasPackageJson: true, hasCi: true, hasTests: true },
         sizeKb: 300,
@@ -677,6 +681,10 @@ test('buildReportModel preserves presentation fields from portfolio items', () =
   assert.equal(item.htmlUrl, 'https://github.com/owner/my-tool');
   assert.equal(item.homepage, 'https://my-tool.dev');
   assert.equal(item.category, 'tooling');
+  assert.equal(item.fork, true);
+  assert.equal(item.forkType, 'active');
+  assert.equal(item.private, true);
+  assert.equal(item.publicAlias, 'relay-task-engine');
 });
 
 test('buildReportModel omits presentation fields when absent', () => {
@@ -705,6 +713,71 @@ test('buildReportModel omits presentation fields when absent', () => {
   assert.equal(Object.hasOwn(item, 'htmlUrl'), false);
   assert.equal(Object.hasOwn(item, 'homepage'), false);
   assert.equal(Object.hasOwn(item, 'category'), false);
+  assert.equal(Object.hasOwn(item, 'fork'), false);
+  assert.equal(Object.hasOwn(item, 'forkType'), false);
+  assert.equal(Object.hasOwn(item, 'private'), false);
+  assert.equal(Object.hasOwn(item, 'publicAlias'), false);
+});
+
+test('report command generates publicAlias for private repos when an LLM key is available', async () => {
+  const workspace = await mkdtemp(path.join(os.tmpdir(), 'gpa-report-public-alias-'));
+  const outputDir = path.join(workspace, 'output');
+  await mkdir(outputDir, { recursive: true });
+
+  await writeFile(
+    path.join(outputDir, 'portfolio.json'),
+    JSON.stringify({
+      meta: { generatedAt: '2026-03-03T00:00:00.000Z', asOfDate: null, count: 1 },
+      items: [
+        {
+          slug: 'private-repo',
+          type: 'repo',
+          title: 'Private Repo',
+          score: 78,
+          state: 'active',
+          effort: 'm',
+          value: 'high',
+          private: true,
+          category: 'tooling',
+          language: 'TypeScript',
+          topics: ['jobs', 'queue'],
+          taxonomyMeta: { sources: { effort: 'user' } },
+          structuralHealth: { hasReadme: true, hasPackageJson: true, hasCi: true, hasTests: true },
+          sizeKb: 320,
+          nextAction: 'Write launch notes — Done when: reviewer signs off.'
+        }
+      ]
+    }, null, 2),
+    'utf8'
+  );
+
+  const originalFetch = globalThis.fetch;
+  const ResponseCtor = globalThis.Response;
+  globalThis.fetch = async () =>
+    new ResponseCtor(
+      JSON.stringify({
+        output: [
+          {
+            content: [
+              { text: 'Internal Queue Console' }
+            ]
+          }
+        ]
+      }),
+      {
+        status: 200,
+        headers: { 'content-type': 'application/json' }
+      }
+    );
+
+  try {
+    await runReportCommand({ 'output-dir': outputDir, format: 'all', quiet: true, openaiKey: 'test-key' });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+
+  const report = await readJsonFile(path.join(outputDir, 'portfolio-report.json'));
+  assert.equal(report.items[0].publicAlias, 'internal-queue-console');
 });
 
 test('applyPresentationOverrides sets presentationState on matching items', () => {

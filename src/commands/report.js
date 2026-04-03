@@ -1,6 +1,8 @@
 import path from 'node:path';
 import { buildReportModel } from '../core/report.js';
+import { createPublicAliasLLMCaller, generatePublicAlias } from '../core/publicAliasGenerator.js';
 import { loadPresentationOverrides, applyPresentationOverrides } from '../core/presentationOverrides.js';
+import { getEnv } from '../config.js';
 import { readJsonFile, readJsonFileIfExists } from '../io/files.js';
 import { writeReportAscii, writeReportJson, writeReportMarkdown } from '../io/report.js';
 import { UsageError } from '../errors.js';
@@ -46,9 +48,18 @@ export async function runReportCommand(options = {}) {
   const presentationOverridesPath = resolvePresentationOverridesPath(options);
   const presentationOverrides = await loadPresentationOverrides(presentationOverridesPath);
   const reportModel = buildReportModel(portfolio, inventory, { policyOverlay });
+  const callLLM = createPublicAliasLLMCaller(getEnv(options));
 
   if (presentationOverrides.size > 0) {
     reportModel.items = applyPresentationOverrides(reportModel.items, presentationOverrides);
+  }
+
+  if (typeof callLLM === 'function') {
+    const privateItems = reportModel.items.filter((item) => item.private && !item.publicAlias);
+
+    for (const item of privateItems) {
+      item.publicAlias = await generatePublicAlias(item, callLLM);
+    }
   }
 
   const writtenPaths = [];

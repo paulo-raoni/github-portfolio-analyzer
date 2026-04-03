@@ -1,5 +1,39 @@
 const PAGE_SIZE = 100;
 
+/**
+ * Classifies a fork as active or passive.
+ * Active forks have commits ahead of the upstream default branch.
+ */
+export async function classifyFork(client, repo) {
+  if (!repo?.fork) {
+    return null;
+  }
+
+  const parent = repo.parent;
+  if (!parent) {
+    return 'passive';
+  }
+
+  const ownerLogin = repo.owner?.login ?? repo.ownerLogin;
+  const parentOwner = parent.owner?.login;
+  const parentBranch = parent.default_branch ?? parent.defaultBranch ?? 'main';
+  const branch = repo.default_branch ?? repo.defaultBranch ?? 'main';
+
+  if (!ownerLogin || !parentOwner || !repo.name) {
+    return 'passive';
+  }
+
+  try {
+    const comparison = await client.request(
+      `/repos/${encodeURIComponent(ownerLogin)}/${encodeURIComponent(repo.name)}/compare/${encodeURIComponent(parentOwner)}:${encodeURIComponent(parentBranch)}...${encodeURIComponent(ownerLogin)}:${encodeURIComponent(branch)}`
+    );
+
+    return (comparison?.ahead_by ?? 0) > 0 ? 'active' : 'passive';
+  } catch {
+    return 'passive';
+  }
+}
+
 export async function fetchAllRepositories(client) {
   const repositories = [];
 
@@ -26,6 +60,17 @@ export async function fetchAllRepositories(client) {
   }
 
   repositories.sort((left, right) => left.full_name.localeCompare(right.full_name));
+
+  const forks = repositories.filter((repository) => repository.fork);
+  for (let index = 0; index < forks.length; index += 5) {
+    const batch = forks.slice(index, index + 5);
+    await Promise.all(
+      batch.map(async (repository) => {
+        repository.forkType = await classifyFork(client, repository);
+      })
+    );
+  }
+
   return repositories;
 }
 
@@ -39,6 +84,8 @@ export function normalizeRepository(repo) {
     private: repo.private,
     archived: repo.archived,
     fork: repo.fork,
+    forkType: repo.forkType ?? null,
+    parent: repo.parent ?? null,
     htmlUrl: repo.html_url,
     description: repo.description,
     language: repo.language,
