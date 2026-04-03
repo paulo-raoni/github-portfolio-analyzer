@@ -15,6 +15,7 @@ export class GithubClient {
   constructor(token) {
     this.token = token;
     this.maxRetries = 4;
+    this._delay = sleepMs;
   }
 
   async request(path, init = {}) {
@@ -42,7 +43,7 @@ export class GithubClient {
           responseHeaders: response.headers,
           attempt
         });
-        await sleepMs(delayMs);
+        await this._delay(delayMs);
         continue;
       }
 

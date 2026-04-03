@@ -1,11 +1,21 @@
 {
   "name": "github-portfolio-analyzer",
-  "version": "1.2.0",
+  "version": "1.4.0",
   "commands": [
     { "id": "analyze" },
     { "id": "ingest-ideas" },
     { "id": "build-portfolio" },
-    { "id": "report", "flags": ["--policy", "--explain", "--output", "--format", "--quiet"] }
+    {
+      "id": "report",
+      "flags": [
+        "--policy",
+        "--explain",
+        "--output",
+        "--format",
+        "--quiet",
+        "--presentation-overrides"
+      ]
+    }
   ],
   "outputs": [
     "output/inventory.json",

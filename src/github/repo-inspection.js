@@ -37,8 +37,12 @@ async function readPackageJson(client, repository) {
   try {
     const response = await client.request(repoApiPath(repository, 'contents/package.json'));
     if (response?.content && response?.encoding === 'base64') {
-      const decoded = Buffer.from(response.content, 'base64').toString('utf8');
-      return JSON.parse(decoded);
+      try {
+        const decoded = Buffer.from(response.content, 'base64').toString('utf8');
+        return JSON.parse(decoded);
+      } catch {
+        return null;
+      }
     }
     return null;
   } catch (error) {

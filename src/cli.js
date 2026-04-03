@@ -20,7 +20,7 @@ const COMMAND_OPTIONS = {
   analyze: new Set(['as-of', 'output-dir']),
   'ingest-ideas': new Set(['input', 'prompt', 'output-dir']),
   'build-portfolio': new Set(['output-dir']),
-  report: new Set(['output-dir', 'output', 'format', 'policy', 'priorities', 'explain', 'quiet'])
+  report: new Set(['output-dir', 'output', 'format', 'policy', 'priorities', 'explain', 'quiet', 'presentation-overrides'])
 };
 
 export async function runCli(argv) {
@@ -97,6 +97,8 @@ function printHelp() {
   console.log('  --format VALUE         ascii|md|json|all (default: all)');
   console.log('  --policy PATH          Optional policy overlay JSON file');
   console.log('  --priorities PATH      Alias for --policy');
+  console.log('  --presentation-overrides PATH');
+  console.log('                         Optional presentation overrides JSON file');
   console.log('  --explain              Print NOW ranking explainability to console');
   console.log('  --quiet                Suppress non-error logs');
 }

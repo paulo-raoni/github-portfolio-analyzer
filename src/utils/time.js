@@ -14,6 +14,9 @@ export function resolveAsOfDate(input) {
     if (Number.isNaN(asDate.getTime())) {
       throw new Error(`Invalid --as-of value: ${input}. Expected YYYY-MM-DD.`);
     }
+    if (asDate.toISOString().slice(0, 10) !== input) {
+      throw new Error(`Invalid --as-of value: ${input}. Date does not exist in the calendar.`);
+    }
 
     return input;
   }
