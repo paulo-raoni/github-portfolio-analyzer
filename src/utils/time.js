@@ -7,12 +7,12 @@ export function utcTodayDateString() {
 export function resolveAsOfDate(input) {
   if (typeof input === 'string' && input.length > 0) {
     if (!ISO_DATE_PATTERN.test(input)) {
-      throw new Error(`Invalid --as-of value: ${input}. Expected YYYY-MM-DD.`);
+      return utcTodayDateString();
     }
 
     const asDate = new Date(`${input}T00:00:00.000Z`);
-    if (Number.isNaN(asDate.getTime())) {
-      throw new Error(`Invalid --as-of value: ${input}. Expected YYYY-MM-DD.`);
+    if (Number.isNaN(asDate.getTime()) || asDate.toISOString().slice(0, 10) !== input) {
+      return utcTodayDateString();
     }
 
     return input;
