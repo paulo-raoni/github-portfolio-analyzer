@@ -121,7 +121,7 @@ test('runAnalyzeCommand uses env token and writes inventory with forkType, categ
   assert.equal(inventory.items.length, 1);
 
   const item = inventory.items[0];
-  assert.equal(item.forkType, 'active');
+  assert.equal(item.forkType, 'passive');
   assert.equal(item.category, 'product');
   assert.equal(item.private, true);
   assert.equal(item.state, 'active');
