@@ -22,12 +22,7 @@ export async function runAnalyzeCommand(options = {}) {
     required: [
       { key: 'githubToken', label: 'GitHub Personal Access Token' }
     ],
-    optional: [
-      { key: 'githubUsername', label: 'GitHub Username' },
-      { key: 'openaiKey', label: 'OpenAI API Key' },
-      { key: 'geminiKey', label: 'Gemini API Key' },
-      { key: 'anthropicKey', label: 'Anthropic API Key' }
-    ]
+    optional: []
   });
 
   let token;
