@@ -522,11 +522,11 @@ Every repository passes through a deterministic scoring pipeline:
 flowchart LR
     subgraph top [ ]
         direction LR
-        A([repo metadata]) --> B(inferRepoCategory) --> C([category]) --> D(scoreRepository) --> E([score 0–100])
+        A([repo metadata]) --> B(inferRepoCategory) --> C([category]) --> D(scoreRepository) --> E([score 0-100])
     end
     subgraph mid [ ]
         direction RL
-        J(computePriorityBand) <-- I([effort xs-xl]) <-- H(computeEffortEstimate) <-- G([CL 0–5]) <-- F(computeCompletionLevel)
+        J(computePriorityBand) <-- I([effort xs-xl]) <-- H(computeEffortEstimate) <-- G([CL 0-5]) <-- F(computeCompletionLevel)
     end
     E --> F
     E -. feeds .-> J
