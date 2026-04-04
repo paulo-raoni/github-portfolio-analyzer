@@ -73,6 +73,27 @@ export async function fetchAllRepositories(client, asOfDate = new Date().toISOSt
     );
   }
 
+  for (let index = 0; index < repositories.length; index += 5) {
+    const batch = repositories.slice(index, index + 5);
+    await Promise.all(
+      batch.map(async (repository) => {
+        const ownerLogin = repository.owner?.login ?? repository.ownerLogin ?? '';
+        if (!ownerLogin || !repository.name) {
+          repository.languages = {};
+          return;
+        }
+
+        try {
+          repository.languages = await client.request(
+            `/repos/${encodeURIComponent(ownerLogin)}/${encodeURIComponent(repository.name)}/languages`
+          );
+        } catch {
+          repository.languages = {};
+        }
+      })
+    );
+  }
+
   return repositories;
 }
 
@@ -81,9 +102,9 @@ export function normalizeRepository(repo) {
     id: repo.id,
     nodeId: repo.node_id,
     name: repo.name,
-    ownerLogin: repo.owner?.login ?? '',
+    ownerLogin: repo.owner?.login ?? repo.ownerLogin ?? '',
     fullName: repo.full_name,
-    private: repo.private,
+    private: Boolean(repo.private),
     archived: repo.archived,
     fork: repo.fork,
     forkType: repo.forkType ?? null,
@@ -91,6 +112,10 @@ export function normalizeRepository(repo) {
     htmlUrl: repo.html_url,
     description: repo.description,
     language: repo.language,
+    languages:
+      typeof repo.languages === 'object' && repo.languages !== null && !Array.isArray(repo.languages)
+        ? repo.languages
+        : {},
     homepage: typeof repo.homepage === 'string' && repo.homepage.trim().length > 0
       ? repo.homepage.trim()
       : null,

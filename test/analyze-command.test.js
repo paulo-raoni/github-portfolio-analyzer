@@ -26,7 +26,7 @@ test('promptMissingKeys skips all prompts when token is already present in env',
   }
 });
 
-test('runAnalyzeCommand uses env token and writes inventory with forkType, category, and private fields', { concurrency: false }, async () => {
+test('runAnalyzeCommand uses env token and writes inventory with forkType, category, private, and languages fields', { concurrency: false }, async () => {
   const workspace = await mkdtemp(path.join(os.tmpdir(), 'gpa-analyze-'));
   const outputDir = path.join(workspace, 'output');
   const originalToken = process.env.GITHUB_TOKEN;
@@ -100,6 +100,10 @@ test('runAnalyzeCommand uses env token and writes inventory with forkType, categ
       return jsonResponse([{ name: 'ci.yml' }]);
     }
 
+    if (requestPath === '/repos/octocat/pomodoro-clock/languages') {
+      return jsonResponse({ JavaScript: 12000, CSS: 3400 });
+    }
+
     throw new Error(`Unexpected fetch URL: ${requestPath}`);
   };
 
@@ -124,9 +128,11 @@ test('runAnalyzeCommand uses env token and writes inventory with forkType, categ
   assert.equal(item.forkType, 'passive');
   assert.equal(item.category, 'product');
   assert.equal(item.private, true);
+  assert.deepEqual(item.languages, { JavaScript: 12000, CSS: 3400 });
   assert.equal(item.state, 'active');
   assert.equal(item.activity, 'active');
   assert.equal(requestedUrls.some((url) => url.includes('/compare/')), false);
+  assert.equal(requestedUrls.includes('/repos/octocat/pomodoro-clock/languages'), true);
 });
 
 function jsonResponse(body, status = 200) {

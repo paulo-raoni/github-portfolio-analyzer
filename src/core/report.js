@@ -205,13 +205,16 @@ export function buildReportModel(portfolioData, inventoryData = null, options = 
       nextAction: String(item.nextAction ?? '').trim(),
       // presentation fields — passed directly from portfolio item
       ...(item.language != null ? { language: item.language } : {}),
+      ...(typeof item.languages === 'object' && item.languages !== null && !Array.isArray(item.languages) && Object.keys(item.languages).length > 0
+        ? { languages: item.languages }
+        : {}),
       ...(Array.isArray(item.topics) && item.topics.length > 0 ? { topics: item.topics } : {}),
       ...(!isPrivate && item.htmlUrl != null ? { htmlUrl: item.htmlUrl } : {}),
       ...(!isPrivate && item.homepage != null ? { homepage: item.homepage } : {}),
       ...(item.category != null ? { category: item.category } : {}),
       ...(item.fork != null ? { fork: Boolean(item.fork) } : {}),
       ...(item.forkType != null ? { forkType: item.forkType } : {}),
-      ...(item.private != null ? { private: Boolean(item.private) } : {}),
+      private: Boolean(item.private ?? false),
       ...(item.publicAlias != null ? { publicAlias: item.publicAlias } : {}),
       ...(!isPrivate && item.description != null ? { description: item.description } : {}),
       ...(isPrivate && item.description != null ? { _description: item.description } : {})

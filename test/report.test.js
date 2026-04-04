@@ -701,6 +701,7 @@ test('buildReportModel masks sensitive presentation fields for private items', (
         effort: 'm',
         value: 'high',
         language: 'TypeScript',
+        languages: { TypeScript: 25000, CSS: 6000 },
         topics: ['cli', 'node'],
         htmlUrl: 'https://github.com/owner/my-tool',
         homepage: 'https://my-tool.dev',
@@ -722,6 +723,7 @@ test('buildReportModel masks sensitive presentation fields for private items', (
   assert.equal(item.slug, 'relay-task-engine');
   assert.equal(item.title, 'relay-task-engine');
   assert.equal(item.language, 'TypeScript');
+  assert.deepEqual(item.languages, { TypeScript: 25000, CSS: 6000 });
   assert.deepEqual(item.topics, ['cli', 'node']);
   assert.equal(Object.hasOwn(item, 'htmlUrl'), false);
   assert.equal(Object.hasOwn(item, 'homepage'), false);
@@ -793,13 +795,14 @@ test('buildReportModel omits presentation fields when absent', () => {
   const report = buildReportModel(portfolio, null, { generatedAt: '2026-03-03T00:00:00.000Z' });
   const item = report.items[0];
   assert.equal(Object.hasOwn(item, 'language'), false);
+  assert.equal(Object.hasOwn(item, 'languages'), false);
   assert.equal(Object.hasOwn(item, 'topics'), false);
   assert.equal(Object.hasOwn(item, 'htmlUrl'), false);
   assert.equal(Object.hasOwn(item, 'homepage'), false);
   assert.equal(Object.hasOwn(item, 'category'), false);
   assert.equal(Object.hasOwn(item, 'fork'), false);
   assert.equal(Object.hasOwn(item, 'forkType'), false);
-  assert.equal(Object.hasOwn(item, 'private'), false);
+  assert.equal(item.private, false);
   assert.equal(Object.hasOwn(item, 'publicAlias'), false);
 });
 

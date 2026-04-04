@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.4.2] - 2026-04-03
+
+### Fixed
+- `normalizeRepository` now explicitly coerces `private` to boolean, preventing `undefined` from propagating through the pipeline and causing private repos to be treated as public.
+- `buildReportModel` always includes `private` in output (was omitted when falsy), ensuring the worker always receives an explicit value.
+
+### Added
+- Language breakdown via GitHub `/languages` API endpoint. Each repo now has a `languages` field (`Record<string, number>`) with byte counts per language, enabling multi-language badge display in the portfolio frontend.
+
 ## [1.4.1] - 2026-04-03
 
 ### Fixed
