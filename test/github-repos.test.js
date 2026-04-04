@@ -46,7 +46,7 @@ test('classifyFork falls back to passive when comparison API throws, regardless 
         owner: { login: 'upstream' },
         default_branch: 'main'
       }
-    }, '2026-04-03'),
+    }),
     'passive'
   );
 });
@@ -65,7 +65,7 @@ test('classifyFork falls back to passive when compare is unavailable and parent 
       owner: { login: 'owner' },
       pushed_at: '2025-10-01T00:00:00.000Z',
       parent: null
-    }, '2026-04-03'),
+    }),
     'passive'
   );
 });
