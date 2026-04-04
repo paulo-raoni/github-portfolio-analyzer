@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.4.3] - 2026-04-04
+
+### Changed
+
+- `classifyFork`: removed unused `asOfDate` parameter from signature and all call sites.
+  The parameter was added for a date-based heuristic removed in v1.4.1 and was never
+  read inside the function body.
+
 ## [1.4.2] - 2026-04-03
 
 ### Fixed

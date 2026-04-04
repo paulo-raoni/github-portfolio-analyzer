@@ -4,7 +4,7 @@ const PAGE_SIZE = 100;
  * Classifies a fork as active or passive.
  * Active forks are ahead of the upstream default branch.
  */
-export async function classifyFork(client, repo, asOfDate = new Date().toISOString().slice(0, 10)) {
+export async function classifyFork(client, repo) {
   if (!repo?.fork) {
     return null;
   }
@@ -68,7 +68,7 @@ export async function fetchAllRepositories(client, asOfDate = new Date().toISOSt
     const batch = forks.slice(index, index + 5);
     await Promise.all(
       batch.map(async (repository) => {
-        repository.forkType = await classifyFork(client, repository, asOfDate);
+        repository.forkType = await classifyFork(client, repository);
       })
     );
   }
