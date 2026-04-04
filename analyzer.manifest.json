@@ -1,6 +1,6 @@
 {
   "name": "github-portfolio-analyzer",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "commands": [
     { "id": "analyze" },
     { "id": "ingest-ideas" },

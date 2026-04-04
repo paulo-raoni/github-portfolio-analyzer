@@ -203,7 +203,8 @@
         "priorityBand",
         "priorityOverrides",
         "priorityWhy",
-        "nextAction"
+        "nextAction",
+        "private"
       ],
       "properties": {
         "slug": { "type": "string" },
@@ -243,6 +244,10 @@
         },
         "nextAction": { "type": "string" },
         "language": { "type": "string" },
+        "languages": {
+          "type": "object",
+          "additionalProperties": { "type": "number" }
+        },
         "topics": {
           "type": "array",
           "items": { "type": "string" }

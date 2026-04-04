@@ -85,6 +85,7 @@ test('normalizeRepository preserves fork metadata for downstream consumers', () 
     html_url: 'https://github.com/owner/my-repo',
     description: 'desc',
     language: 'TypeScript',
+    languages: { TypeScript: 10000, CSS: 2000 },
     homepage: '',
     stargazers_count: 1,
     forks_count: 2,
@@ -100,4 +101,33 @@ test('normalizeRepository preserves fork metadata for downstream consumers', () 
   assert.equal(normalized.fork, true);
   assert.equal(normalized.forkType, 'passive');
   assert.deepEqual(normalized.parent, { full_name: 'upstream/my-repo' });
+  assert.deepEqual(normalized.languages, { TypeScript: 10000, CSS: 2000 });
+});
+
+test('normalizeRepository defaults languages to empty object when absent', () => {
+  const normalized = normalizeRepository({
+    id: 1,
+    node_id: 'n',
+    name: 'r',
+    owner: { login: 'o' },
+    full_name: 'o/r',
+    private: false,
+    archived: false,
+    fork: false,
+    html_url: 'https://github.com/o/r',
+    description: null,
+    language: null,
+    homepage: null,
+    stargazers_count: 0,
+    forks_count: 0,
+    open_issues_count: 0,
+    size: 0,
+    default_branch: 'main',
+    topics: [],
+    license: null,
+    updated_at: null,
+    pushed_at: null
+  });
+
+  assert.deepEqual(normalized.languages, {});
 });
